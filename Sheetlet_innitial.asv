@@ -1,0 +1,390 @@
+%Sheetlet model
+%% Define inputs
+
+% Dimensions of innitial box to get myocyte network inside sheetlets
+global L_SLT W_SLT T_SLT min_Y min_Z
+
+
+%Cardiomyocyte dimensions
+d_f = 10 + (20-10)*betarnd(3,3,1,500);  %Creating beta randomly distributed
+                                        %array for cardiomyocite diameters 
+                                        %between 10-20  micrometers (3,3 
+                                        %gives normal distributionbut not 
+                                        %smooth)
+f_rad = 15/2;
+
+% figure (1)
+% histogram(d_f,50)
+
+l_f = 100 + (150-100)*betarnd(3,3,1,500); %Creating beta randomly distribut
+                                          %ed array for cardiomyocite 
+                                          %lengths between 100-150 
+                                          %micrometers (3,3 gives normal 
+                                          %distributionbut not smooth)
+
+%Volume fractions 
+
+Vf_myocite = 0.3;
+Vf_ecm =0.7;
+
+
+%Sheetlet Orientation
+
+ha = 0; %Helical angle in radian
+ta = 0; %Transverse angle in radian
+
+
+
+
+
+ %% Create points on face 1 (Without layers)
+ 
+ %Number of fibre along fibre dirrection and within one cross section
+ Nf_l = round(L_SLT/100);  %Considered 100 nanometer innitial distance between two myocites in fibre dirrection
+ Nf_f =  round((0.7*(W_SLT*T_SLT)/(pi*f_rad^2)),0);
+ 
+
+ 
+ %Generate points on surface 1
+ Point_list = {};
+ face1_pt_list ={};
+ Dis = @(a1,a2,b1,b2,c1,c2) sqrt(((a1-a2)^2+(b1-b2)^2+(c1-c2)^2));
+%br_point=1;
+
+p_face=0;
+br_point=0;
+while p_face<Nf_f 
+
+    P_x = -15+30*rand(1,1); % keeping variation of -15 to 30 micrometers for each vertex plane along x dirrection
+    P_y = min_Y + rand(1,1)*W_SLT;
+    P_z = min_Z + rand(1,1)*T_SLT;
+
+
+    br_point=br_point+1; 
+
+    D_list=[];
+    for c = 1:length(Point_list)
+        D = Dis(P_x,Point_list{c}(1),P_y,Point_list{c}(2),P_z,Point_list{c}(3));
+        D_list(end+1) = D;
+
+    end
+
+    %Introducing a breakpoint if number of cardiomyocytes across the space
+    %cannot reach 50% of the area
+
+    if br_point==100000
+        fprintf('Randomization iterations reached 100000 and generated points = %i / %i \n',length(Point_list),Nf_f)
+        break
+    end
+
+    %Make sure cardiomycytes in the region do not overlap each other  
+    if min(D_list)<2*f_rad
+        continue    
+    else 
+        Point_list{end+1} = [P_x,P_y,P_z];
+        face1_pt_list{end+1} = [P_x,P_y,P_z];
+        p_face=p_face+1;
+    end
+end
+
+
+%% Extruding points
+
+%Nf_l - Number of vertex planes(faces) along x dirrection
+
+facevise_p_list={face1_pt_list};
+
+%create empty cells in a cell array for each plane along x dirrection 
+for cl=1:Nf_l
+    empty_cell={};
+    facevise_p_list{end+1}=empty_cell;
+end
+
+%Consider each point in the first face of the sheetlet and extrude those
+%points Nf_l times, checking minimum distance of fibre diameter with any other point
+%in the whole point list
+
+
+max_var_yz = 2*f_rad/3; %maximum variation in x and y coodinates of cell center line along a line = fibre diameter/3
+
+
+for pt=1:length(face1_pt_list)
+    Base_point = face1_pt_list{pt};
+    
+    ln=1;
+    
+    
+    br_point=0;
+    while ln<=Nf_l
+        Px_new = Base_point(1)+ln*100-15+30*rand(1,1);
+        Py_new = Base_point(2)-(max_var_yz/2)+max_var_yz*rand(1,1);     
+        Pz_new = Base_point(3)-(max_var_yz/2)+max_var_yz*rand(1,1);
+        
+        D_list=[];
+        for c = 1:length(Point_list)
+            D = Dis(Px_new,Point_list{c}(1),Py_new,Point_list{c}(2),Pz_new,Point_list{c}(3));
+            D_list(end+1) = D;
+        end
+        
+        br_point = br_point+1;
+        
+        if br_point==100000
+            fprintf('Randomization iterations reached 100000 and extruded points = %i / %i for %i base point \n',ln,Nf_l, pt)
+            break
+        end
+        
+       if min(D_list)<2*f_rad
+            continue    
+       else 
+            Point_list{end+1} = [Px_new,Py_new,Pz_new];
+            facevise_p_list{ln+1}{end+1} = [Px_new,Py_new,Pz_new]; %Add points to the facevise point list
+            p_face=p_face+1;
+            ln=ln+1;
+       end
+    end
+end
+
+%% construct the connectivity table
+
+con_table = {};
+
+linewise_table ={}; %Array of arrays containing a array of nodes for every continuing line of fibres
+%create empty cells in a cell array for each extruding basepoint line 
+for c2=1:Nf_f
+    empty_cell={};
+    linewise_table{end+1}=empty_cell;
+end
+
+%innitiate variable to give index to each graph vertex
+in_v = 0;
+
+%innitiate connectivity of vertex lists of the graph
+graph_v1=[];
+graph_v2=[];
+
+%innitiate a list of points that actually got a connection after all checks
+connected_p_list = {};
+
+break_extending_line = 0;
+min_line_dis=[];
+for bp=1:Nf_f    %id of the basepoint that is extending
+    for v = 1:Nf_l   %id of the cell number in lingitudinal dirrection(x) coreespoinding correspoinding to basepoint
+        v1=facevise_p_list{v}{bp};
+        v2=facevise_p_list{v+1}{bp};
+        
+        %Checking minimum distance of the line connecting v1 and v2 with 
+        %all other lines already cerated
+        
+        line_dis_list=[1000];
+        
+        for bp_c = 1:bp-1
+            for ln_c = 1:length(linewise_table{bp_c})
+                v1_c=linewise_table{bp_c}{ln_c}{1};
+                v2_c=linewise_table{bp_c}{ln_c}{2};
+                
+                ddd = min_dis_2lines(v1,v2,v1_c,v2_c); %Calling function to calculate distance
+                
+                line_dis_list(end+1)=ddd;
+                break_extending_line = 0;
+                if ddd < 2*f_rad
+                    v2=v2_c;    %Since always v2_c is the one have higher 
+                                %x coordinate
+                                break_extending_line = 1;
+                    break;   %%% Check weather you need to check the 
+                             %%%minimum distance for this line as well
+                end
+            end
+            if break_extending_line==1
+                    break;
+            end
+        end
+            
+        aaaa=min(line_dis_list);
+        min_line_dis(end+1)= aaaa;
+       
+        linewise_table{bp}{end+1}={v1,v2};  %cell which have the all connected point pairs
+        
+        v1_connected=false;                 %Check whether vertex 1 is already in the graph
+        for in_v = 1:length(connected_p_list)  % If vertex 1 is already in the grapg, get the index to create connectivity table
+            if connected_p_list{in_v}==v1
+                v1_in = in_v;
+                v1_connected=true;
+                break
+            end
+        end
+        if not(v1_connected)                %if vertex 1 is not in the add it to both corrdinates list and connectivity list
+            connected_p_list{end+1}=v1;
+            v1_in=length(connected_p_list);
+            
+        end
+        
+        v2_connected=false;                %Check whether vertex 2 is already in the graph
+        for in_v = 1:length(connected_p_list)   % If vertex 2 is already in the grapg, get the index to create connectivity table
+            if connected_p_list{in_v}==v2
+                v2_in=in_v;
+                v2_connected=true;
+                break
+            end
+        end
+        if not(v2_connected)                 %if vertex 2 is not in the add it to both corrdinates list and connectivity list
+            connected_p_list{end+1}=v2;
+            v2_in=length(connected_p_list);
+        end
+        
+        graph_v1(end+1)= v1_in;
+        graph_v2(end+1)= v2_in;
+        
+        con_table{end+1}=[v1_in,v2_in];
+        
+        if break_extending_line == 1
+            break;
+        end
+       
+    end
+    
+end
+
+%% Creating branchs
+
+graph_v1_branched = graph_v1;
+graph_v2_branched = graph_v2;
+
+linewise_point_list = {};
+for lpi=1:length(linewise_table)
+    pointss = {};
+    for lpi1 = 1:length(linewise_table{lpi})
+        pointss{end+1} = linewise_table{lpi}{lpi1}{1};
+        if lpi1 == length(linewise_table{lpi})
+            pointss{end+1} = linewise_table{lpi}{lpi1}{2};
+        end
+    end
+    linewise_point_list{end+1} = pointss;
+end
+    
+branch_table = {};
+
+
+Vf_before_branch = fibreVolfrac(linewise_table,f_rad,L_SLT,W_SLT,T_SLT)
+
+ 
+ branch_bp_count = round(0.8*length(face1_pt_list));  %Create branches in 
+ 
+ 
+ for iter = 1:3
+     branch_bp = randi([1,length(linewise_table)],1,branch_bp_count);
+     for ij=1:length(branch_bp)
+         branch_bp_num = branch_bp(ij);
+         v1_num = randi([1,length(linewise_table{branch_bp_num})]);
+         v1_branch = linewise_table{branch_bp_num}{v1_num}{1};
+
+         dis_for_branch_v2 = [];
+         dis_details ={};
+         for ch_d = 1:length(linewise_point_list)
+             if ch_d == branch_bp_num
+                 continue;
+             end
+
+             for ch_d1 = 1:length(linewise_point_list{ch_d})
+                 ch_v2 = linewise_point_list{ch_d}{ch_d1};
+                 dis_for_branch_v2(end+1) = norm(v1_branch-ch_v2);
+                 dis_details{end+1} = [ch_d,ch_d1];
+             end 
+         end
+         [mini_branch_dis,v2_branch_dis_index] = min(dis_for_branch_v2);
+         v2_index = dis_details{v2_branch_dis_index};
+
+         v2_branch = linewise_point_list{v2_index(1)}{v2_index(2)};
+
+         branch_table{end+1} = {v1_branch,v2_branch};
+
+         for find_v1_in = 1:length(connected_p_list)
+             if connected_p_list{find_v1_in}==v1_branch;
+                 v1_br_in = find_v1_in;
+                 break;
+             end
+         end
+         for find_v2_in = 1:length(connected_p_list)
+             if connected_p_list{find_v2_in}==v2_branch;
+                 v2_br_in = find_v2_in;
+                 break;
+             end
+         end
+         
+         branch_exist = 0;
+         
+         for br_check = 1:length(con_table)
+             if (con_table{br_check}(1)==v1_br_in && con_table{br_check}(2)==v2_br_in) || (con_table{br_check}(2)==v1_br_in && con_table{br_check}(1)==v2_br_in) 
+                 branch_exist = 1;
+                 break;
+             end
+         end
+         
+         if not(branch_exist) && not(v1_br_in == v2_br_in)
+             graph_v1_branched(end+1) = v1_br_in;
+             graph_v2_branched(end+1) = v2_br_in;
+             con_table{end+1}=[v1_br_in,v2_br_in];
+         else
+             continue
+         end      
+     end
+ end
+
+ %% Calculate new volume fraction
+ 
+ branch_vol = 0;
+ for lines = 1:length(branch_table)
+     branch_vol = branch_vol+pi*f_rad^2*norm(branch_table{lines}{2}-branch_table{lines}{1});
+ end
+ 
+ Vf_branch= 100*branch_vol/(L_SLT*T_SLT*W_SLT);
+ 
+Vf_after_branch = Vf_before_branch+Vf_branch
+ 
+
+
+
+
+%% Graphical representation
+figure (2)
+
+X=[];
+Y=[];
+Z=[];
+
+for i = 1:length(Point_list)
+X(end+1)=Point_list{i}(1);
+Y(end+1)=Point_list{i}(2);
+Z(end+1)=Point_list{i}(3);
+end
+
+
+scatter3(X,Y,Z,100)
+axis equal
+
+%% Graphical representation of connectivity network
+
+figure(3)
+title('Cardiac Microstructure')
+XX=[];
+YY=[];
+ZZ=[];
+
+for pt_g=1:length(connected_p_list)
+    XX(end+1)=connected_p_list{pt_g}(1);
+    YY(end+1)=connected_p_list{pt_g}(2);
+    ZZ(end+1)=connected_p_list{pt_g}(3);
+end
+
+con_graph=graph(graph_v1_branched,graph_v2_branched);
+pp=plot(con_graph);
+pp.XData=XX;
+pp.YData=YY;
+pp.ZData=ZZ;
+
+
+
+        
+        
+ 
+
+ 

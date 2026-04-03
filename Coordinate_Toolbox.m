@@ -1,0 +1,401 @@
+classdef Coordinate_Toolbox
+    
+    methods(Static)
+        
+        %% Function to get X,Y,Z coordinate list from a cell
+        
+        function [coordinates] = cell_to_double_coordinates(cell)
+            XX_coord=[];
+            YY_coord=[];
+            ZZ_coord=[];
+
+            for pt=1:length(cell)
+                XX_coord(end+1)=cell{pt}(1);
+                YY_coord(end+1)=cell{pt}(2);
+                ZZ_coord(end+1)=cell{pt}(3);
+            end
+            coordinates(:,1) = XX_coord;
+            coordinates(:,2) = YY_coord;
+            coordinates(:,3) = ZZ_coord;
+        end
+        
+        %% function to find coordinate modification amounts to translate
+        %%coordinates to 'min point' befor develop mask
+        
+        function [coord_details] = Modification_amount_and_dimension(polygons,point_list,min_point)
+            voronoi_vertex_y = [];
+            voronoi_vertex_z = [];
+            for i =1:length(polygons)
+                list = polygons{i};
+                for j = 1:size(list,1)
+                    voronoi_vertex_y(end+1) = list(j,1);
+                    voronoi_vertex_z(end+1) = list(j,2);
+                end
+            end
+
+            XX_ruc_mask=[];
+%             YY_ruc_mask=[];
+%             ZZ_ruc_mask=[];
+
+            for pt_g_ruc=1:length(point_list)
+                XX_ruc_mask(end+1)=point_list{pt_g_ruc}(1);
+%                 YY_ruc_mask(end+1)=point_list1{pt_g_ruc}(2);
+%                 ZZ_ruc_mask(end+1)=point_list1{pt_g_ruc}(3);
+            end
+
+            modify_x = min_point(1)-min(XX_ruc_mask);
+            modify_y = min_point(2)-min(voronoi_vertex_y);
+            modify_z = min_point(3)-min(voronoi_vertex_z);
+            
+            domain_x= max(XX_ruc_mask)-min(XX_ruc_mask);
+            domain_y =max(voronoi_vertex_y)-min(voronoi_vertex_y);
+            domain_z =max(voronoi_vertex_z)-min(voronoi_vertex_z);
+            
+                       
+            coord_details(1,:) = [modify_x,modify_y,modify_z];
+            coord_details(2,:) = [domain_x,domain_y,domain_z];
+        end
+        
+        %% Modify all coordinates in a list to a minimum point
+        function [Modified_RUC_coord] =  Modify_RUC_coord_mask(point_list1, modify_amount)
+            XX_ruc_mask=[];
+            YY_ruc_mask=[];
+            ZZ_ruc_mask=[];
+
+            for pt_g_ruc=1:length(point_list1)
+                XX_ruc_mask(end+1)=point_list1{pt_g_ruc}(1);
+                YY_ruc_mask(end+1)=point_list1{pt_g_ruc}(2);
+                ZZ_ruc_mask(end+1)=point_list1{pt_g_ruc}(3);
+            end
+
+            X_modify = modify_amount(1);
+            Y_modify = modify_amount(2);
+            Z_modify = modify_amount(3);
+
+            XX_ruc_modified = XX_ruc_mask+X_modify;
+            YY_ruc_modified = YY_ruc_mask+Y_modify;
+            ZZ_ruc_modified = ZZ_ruc_mask+Z_modify;
+
+
+            Modified_RUC_coord ={};
+            for i = 1: length(XX_ruc_modified)
+                Modified_RUC_coord{end+1} = [XX_ruc_modified(i) YY_ruc_modified(i) ZZ_ruc_modified(i)];
+            end
+        end
+        
+        
+        %% function to modify sheetlet coordinates to compatible with mask 
+        function [Modified_sheetlets] = Modify_shtlt_coord(shtlt_list,modify_amount)
+            Modified_sheetlets = cell(1,length(shtlt_list));
+            
+            for i = 1:length(shtlt_list)
+                shtlt1 = shtlt_list{i};
+                Modified_sheetlets{i} = [shtlt1(:,1)+modify_amount(2),shtlt1(:,2)+modify_amount(3)];
+            end
+        end
+        
+        %% function to calculate minimum distance between line segment and a point in 3D space
+        function dis_pt = min_dis_line_point(v1_line,v2_line,Pt)
+
+            line_seg = v2_line - v1_line;
+            unitV_line = line_seg/norm(line_seg);
+            line_to_p = Pt - v1_line;
+
+            %Find the projection of the point on line and check whether the point
+            %is inside the line segment
+
+            proj = dot(line_to_p,unitV_line)*unitV_line+v1_line;
+
+            vec1 = v1_line - proj;
+            vec2 = v2_line - proj;
+
+            %if it is on line segment, return calculated distance
+            if dot(vec1,vec2) < 0
+              dis_pt = norm(cross(line_seg,line_to_p)) / norm(line_seg);
+            else
+              dis_pt = realmax;
+            end
+        end
+        
+        
+        %% function to calculate minimum distance between two line segments in 3D space
+        function dis_min = min_dis_2lines(l1p1,l1p2,l2p1,l2p2)
+
+            %To find the minimum distance between two lines connecting 4
+            %points
+
+            %Variable name pattern: l1p2 = line 1 point 2
+
+            %Consider line 1 and line 2 in in parametric form l1p1+s1v1 and l2p1+s2v2
+            %(v1 and v2 are vectors)
+
+            %v= (v1 crossproducr v2) is dirrection vector for line M which is
+            %orthogonal to both line1 and line2
+
+            %get projections of points l1p1(m1) and l2p1(m2) into M line and calculate the
+            %distance between those two points will give the minimum distance between
+            %two lines
+
+
+
+            v1=l1p2-l1p1;
+            v2=l2p2-l2p1;
+
+            mag_v1=norm(v1);
+            mag_v2=norm(v2);
+
+            U_v1 = v1/mag_v1;
+            U_v2 = v2/mag_v2;
+
+            vcross = cross(v1,v2);
+
+            %make closest point to the origin is first point of the line
+            if norm(l1p1)<norm(l1p2)
+                v1_1=l1p1;
+                v1_2=l1p2;
+            else
+                v1_1=l1p2;
+                v1_2=l1p1;
+            end
+
+            if norm(l2p1)<norm(l2p2)
+                v2_1=l2p1;
+                v2_2=l2p2;
+            else
+                v2_1=l2p2;
+                v2_2=l2p1;
+            end
+            %If two lines are parallel,check weather they overlap
+            v1 = v1_2-v1_1;
+            v2 = v2_2-v2_1;
+
+            denom=norm(vcross)^2;
+
+            if denom==0   %Two lines are parallel condition
+                d1=dot(U_v1,v1_1-v2_1);
+                d2=dot(U_v1,v1_1-v2_2);
+
+                if d1<=0 && d2<=0  %line 2 before line 1 condition
+                    if abs(d1)<abs(d2)
+                        dis_min = norm(v1_1-v2_1);
+                    else
+                        dis_min = norm(v1_1-v2_2);
+                    end 
+
+                elseif d1>=mag_v1 && d2>=mag_v2  %line2 after line1 condition
+                    if abs(d1)<abs(d2)
+                        dis_min = norm(v1_2-v2_1);
+                    else
+                        dis_min = norm(v1_2-v2_2);
+                    end
+                else  %two line segments overlap condition
+                    v3=v1_1+d1*U_v1-v2_1;
+                    dis_min = norm(v3);
+                end
+
+            else %Two lines are not parallel condition
+                %find unit vectors to express any point in v1 in the form of v1_1+t1*Unit(V1)
+
+                uu =  v2_1-v1_1;
+
+                det1 = det([uu;U_v2;vcross]);
+                det2 = det([uu;U_v1;vcross]);
+
+                % Used reference - Sheetlet model/Resources
+                v22 = dot(v2,v2);
+                v11 = dot(v1,v1);
+                v21 = dot(v2,v1);
+                v21_1 = dot(uu,v1);
+                v21_2 = dot(uu,v2);
+                denom1 = v21*v21 - v22*v11;
+
+                if Matrix_Toolbox.isalmost(denom,0.0, 1e-4)
+                    t1=0;
+                    t2=(v11*t1 - v21_1)/v21;
+                else
+                    t1 = (v21_2*v21-v22*v21_1)/denom1;
+                    t2 = (-v21_1*v21+v11*v21_2)/denom1;
+                end
+
+                t1 = max(min(t1,1),0);
+                t2 = max(min(t2,1),0);
+
+                t1=t1*mag_v1;
+                t2=t2*mag_v2;
+
+
+
+
+                %find closest points on two lines m1,m2
+                %t1 = dot(cross(U_v2,vcross),(-v1_1+v2_1))/dot(vcross,vcross); %References in model folder
+                %t1 = det1/denom
+                m1 = v1_1+t1*U_v1;
+
+                %t2 = dot(cross(U_v1,vcross),(-v1_1+v2_1))/dot(vcross,vcross);  %References in model folder
+                %t2 = mag_v2*det2/denom
+                m2 = v2_1+t2*U_v2;
+
+                %Check whether m1 and m2 on line segments
+                    if dot((v1_1-m1),(v1_2-m1))<0 && dot((v2_1-m2),(v2_2-m2))<0
+                        %both points on line segments condition
+                        dis_min = norm(m1-m2);
+                    elseif dot((v1_1-m1),(v1_2-m1))>0 && dot((v2_1-m2),(v2_2-m2))<0
+                        %Only m2 on linesegment condition
+                        if dot((v1_1-m2),U_v1)<dot((v1_2-m2),U_v1)
+                            dis_min = norm(v1_1-m2);
+                        else
+                            dis_min = norm(v1_2-m2);
+                        end
+                    elseif dot((v1_1-m1),(v1_2-m1))<0 && dot((v2_1-m2),(v2_2-m2))>0
+                        %Only m1 on line segement condition
+                        if dot((v2_1-m1),U_v2)<dot((v2_2-m1),U_v2)
+                            dis_min = norm(v2_1-m1);
+                        else
+                            dis_min = norm(v2_2-m1);
+                        end
+                    else
+                        %Both points not on line segment condition
+                        if t1<0
+                            m1=v1_1;
+                        elseif t1>mag_v1
+                            m1=v1_2;
+                        end
+                        if t2<0
+                            m2=v2_1;
+                        elseif t2>mag_v2
+                            m2=v2_2;
+                        end
+                        dis_min = norm(m1-m2);
+                        %return the distance between closes points
+                    end
+                end
+        end
+
+        %% function to get the arrays of sheetletwise interceonnected cells
+        
+        function [shtlt_wise_connection_list] = find_connected_cells(RUC_con_table_sheetlet_wise,Final_branches)
+            glob_cell_add =0;
+            n_shtlt = length(RUC_con_table_sheetlet_wise);
+            shtlt_wise_connection_list = cell(n_shtlt,1);
+
+            n_branch = length(Final_branches);
+            branch_array = zeros(n_branch,2);
+            for b=1:n_branch
+                branch_array(b,1) = Final_branches{b}(1);
+                branch_array(b,2) = Final_branches{b}(2);
+            end
+
+            sheetlet_all_cells = 0;
+            for stlt = 1:n_shtlt
+                sheetlet_all_cells=sheetlet_all_cells+length(RUC_con_table_sheetlet_wise{stlt});
+            end
+
+
+            for shtlt = 1:length(RUC_con_table_sheetlet_wise)
+                conn_list = RUC_con_table_sheetlet_wise{shtlt};
+                cell_c = length(conn_list);
+                shtlt_con_array = zeros(cell_c,2);
+                for i = 1:cell_c
+                    shtlt_con_array(i,1) = conn_list{i}(1);
+                    shtlt_con_array(i,2) = conn_list{i}(2);
+                end
+
+                connected_cells = cell(cell_c,1);
+                for j = 1:cell_c
+                    vertexes = shtlt_con_array(j,:);
+                    v1_con_ids1 = find(shtlt_con_array(:,1) == vertexes(1));
+                    v1_con_ids2 = find(shtlt_con_array(:,2) == vertexes(1));
+                    v1_con_cells = union(v1_con_ids1,v1_con_ids2);
+                    v1_con_cells_glob = v1_con_cells +glob_cell_add;
+
+                    v2_con_ids1 = find(shtlt_con_array(:,1) == vertexes(2));
+                    v2_con_ids2 = find(shtlt_con_array(:,2) == vertexes(2));
+                    v2_con_cells = union(v2_con_ids1,v2_con_ids2);
+                    v2_con_cells_glob = v2_con_cells +glob_cell_add;
+
+                    v1_br_id1 = find(branch_array(:,1) == vertexes(1));
+                    v1_br_id2 = find(branch_array(:,2) == vertexes(1));
+                    v1_con_brs = union(v1_br_id1,v1_br_id2);
+                    v1_con_brs_glob = v1_con_brs+sheetlet_all_cells;
+
+
+                    v2_br_id1 = find(branch_array(:,1) == vertexes(2));
+                    v2_br_id2 = find(branch_array(:,2) == vertexes(2));
+                    v2_con_brs = union(v2_br_id1,v2_br_id2);
+                    v2_con_brs_glob = v2_con_brs+sheetlet_all_cells;
+
+
+                    all_con_cells = union(v1_con_cells_glob,v2_con_cells_glob);
+                    all_con_branch = union(v1_con_brs_glob,v2_con_brs_glob);
+                    all_con = union(all_con_cells,all_con_branch);
+
+                    connected_cells{j,1} = all_con;
+                end
+                shtlt_wise_connection_list{shtlt,1} = connected_cells;
+                glob_cell_add = glob_cell_add + cell_c;
+            end            
+
+        
+        end
+        
+        %% function to generate global connectivity list
+        
+        function [Global_connection_list, N_cells_before_branch] = glob_con_list(shtlt_wise_connection_list)
+            N_shtlt = length(shtlt_wise_connection_list);
+            N_cells_before_branch = 0;
+            Global_connection_list = {};
+            for i =1:N_shtlt
+                shtlt_cells = shtlt_wise_connection_list{i,1};
+                cell_count = length(shtlt_cells);
+                N_cells_before_branch = N_cells_before_branch+cell_count;
+                for j = 1:cell_count
+                    Global_connection_list{end+1} = shtlt_cells{j};
+                end
+            end
+        end
+        
+        %% Function to rotate voronoi polygons by an angle around x axis
+
+        function [Rotated_poly_list] = Rotate_2D_poly(poly_list,angle)
+            R = [cos(angle), -sin(angle);sin(angle),cos(angle)];
+            
+            n_poly = length(poly_list);
+            Rotated_poly_list = cell(1,n_poly);
+            
+            for i = 1:n_poly
+                poly  = poly_list{i};
+                nvec = size(poly,1);
+                rotated_poly = [];
+                for j=1:nvec
+                    vec = poly(j,:)';
+                    rot_vec = R*vec;
+                    rotated_poly(j,:) = rot_vec;
+                end
+                Rotated_poly_list{1,i} = rotated_poly;
+            end
+
+         
+        end
+        
+        %% Function to create stripe regions (vertical) from a square
+        function [Regions] = CreateDevidedRegions(Domain, n_stripes)
+            Regions =cell(1,n_stripes);
+
+            for i = 1:n_stripes
+                w_rgn = Domain(1)/n_stripes;
+                t = Domain(2);
+                r_temp = [w_rgn*(i-1),0;
+                    w_rgn*i,0;
+                    w_rgn*i,t;
+                    w_rgn*(i-1),t];
+                Regions{1,i} = r_temp;
+            end
+        end
+        
+        
+        
+        
+        
+        
+    end
+end

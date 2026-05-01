@@ -1,11 +1,31 @@
 %Mask generate toolbox
 
 classdef Mask_generate_Toolbox
+
+    % Mask_generate_Toolbox
+    % Utility class for converting geometric representations of cells and
+    % sheetlets into voxelized masks, including collision detection and
+    % voxel classification.
     
     methods(Static)
         
         %% Function to create cell detail list from connectivity table and coordinates
         function Cell_list = gen_cell_detail_list(con_table,point_list,max_cell_dia)
+
+            % gen_cell_detail_list
+            % Generates a structured array describing each cell segment based
+            % on connectivity and coordinate data. Each cell is approximated
+            % as a cylinder.
+            %
+            % Inputs:
+            %   con_table     - Connectivity table (cell array of node indices)
+            %   point_list    - Cell array of 3D coordinates
+            %   max_cell_dia  - Maximum cell diameter
+            %
+            % Output:
+            %   Cell_list     - Nx9 matrix containing:
+            %       [v1x v1y v1z v2x v2y v2z radius length volume]
+
             Cell_list = zeros(length(con_table),9);
             cell_dia = ones(length(con_table)).*max_cell_dia;
             for cell_id = 1:length(con_table)
@@ -36,6 +56,18 @@ classdef Mask_generate_Toolbox
         
         %% Function to generate sheetlet wise cell list
         function shtlt_wise_cell_list = Sheetletwise_cell_details(shtltwise_contable,point_list,max_cell_dia)
+            
+            % Sheetletwise_cell_details
+            % Generates cell detail lists for each sheetlet separately.
+            %
+            % Inputs:
+            %   shtltwise_contable - Cell array of connectivity tables per sheetlet
+            %   point_list         - Cell array of node coordinates
+            %   max_cell_dia       - Maximum cell diameter
+            %
+            % Output:
+            %   shtlt_wise_cell_list - Cell array of cell detail matrices
+            
             shtlt_wise_cell_list = cell(length(shtltwise_contable),1);
             
             for i = 1:length(shtltwise_contable)
@@ -46,31 +78,20 @@ classdef Mask_generate_Toolbox
             
             
         end
-        
-        %% function to generate mask from given cell list
-        
-%         function cell_mask = Cell_geo_to_mask(sheetlets,NbPixel)
-%             
-%             %define innitial mask and 
-% %             NbPixel=round(voxel_dim./Resolution);
-% %             cell_mask = zeros(NbPixel);
-% %             [Xx,Yy,Zz] = ndgrid(1:1:NbPixel(1),1:1:NbPixel(2),1:1:NbPixel(3));
-% %             vectP=[Xx(:)*Resolution(1) Yy(:)*Resolution(2) Zz(:)*Resolution(3)];
-% 
-%             %identify_voxels_in_each_sheetlet
-%             sheetlet_voxels = Mask_generate_Toolbox.Sheetlet_boundary_mask(NbPixel,sheetlets);
-%             
-%             %Create sheetletwise woxel list
-%             Sheetletwise_voxel_list = Mask_generate_Toolbox.sheetlet_voxel_list_func(sheetlet_voxels,NbPixel);
-%             
-%             
-%             
-%             
-%         end
-%         
+              
         %% Function to generate list of each voxel inside a sheetlet
         
         function Sheetletwise_voxel_list = Gen_sheetlet_voxel_list(sheetlets,NbPixel)
+
+            % Gen_sheetlet_voxel_list
+            % Generates voxel coordinates belonging to each sheetlet region.
+            %
+            % Inputs:
+            %   sheetlets - Cell array of polygon definitions
+            %   NbPixel   - Mask dimensions [Nx, Ny, Nz]
+            %
+            % Output:
+            %   Sheetletwise_voxel_list - Cell array of voxel coordinate lists
             
             %identify_voxels_in_each_sheetlet
             sheetlet_voxels = Mask_generate_Toolbox.Sheetlet_boundary_mask(NbPixel,sheetlets);
@@ -97,6 +118,18 @@ classdef Mask_generate_Toolbox
         
         %% function to identify sheetlet boundaries in the mask
         function [sheetlet_voxels] = Sheetlet_boundary_mask(mask_dim,polygons)
+
+            % Sheetlet_boundary_mask
+            % Identifies voxel coordinates that lie inside each sheetlet
+            % polygon using 2D inpolygon checks.
+            %
+            % Inputs:
+            %   mask_dim - Mask dimensions [Nx, Ny, Nz]
+            %   polygons - Cell array of polygon vertex coordinates
+            %
+            % Output:
+            %   sheetlet_voxels - Cell array of voxel coordinates per sheetlet
+
             %sheetlet_mask = zeros(mask_dim(1,2:end));
             sheetlet_voxels = {};
             %sheetlet_vox_boundaries = {};
@@ -131,6 +164,18 @@ classdef Mask_generate_Toolbox
         
         %% function to detect collison between object list and voxel list
         function [In_out_list,id_list] = Collison_detection(objects,points)
+
+            % Collison_detection
+            % Determines whether each voxel lies inside any cylindrical cell.
+            %
+            % Inputs:
+            %   objects - Cell list (Nx7+) describing cylinders
+            %   points  - Voxel coordinate list
+            %
+            % Outputs:
+            %   In_out_list - Logical array (1 if inside any cell)
+            %   id_list     - Index of intersecting cell
+
             size_p = size(points,1);
             In_out_list = false(size_p,1);
             id_list = zeros(size_p,1);
@@ -167,6 +212,18 @@ classdef Mask_generate_Toolbox
         %% Function to calculate minimum distance between line and a point
         
         function dis_pt = min_dis_line_point(v1_line,v2_line,Pt)
+
+            % min_dis_line_point
+            % Computes minimum distance between a point and a line segment.
+            % Only valid if projection lies within segment bounds.
+            %
+            % Inputs:
+            %   v1_line, v2_line - Segment endpoints
+            %   Pt               - Query point
+            %
+            % Output:
+            %   dis_pt           - Minimum distance
+
             line_seg = v2_line - v1_line;
             unitV_line = line_seg/norm(line_seg);
             line_to_p = Pt - v1_line;

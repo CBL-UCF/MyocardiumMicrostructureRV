@@ -1,8 +1,26 @@
 classdef Plotting_Toolbox
 
+    % Plotting_Toolbox
+    % Utility class for visualizing sheetlet boundaries and intra-sheetlet
+    % microstructural connectivity in 3D.
+
     methods(Static)
 
         function a = monitor_sheetlet_boundaries_in3D(fig_no, fig_title, polygon_list, RUC_l)
+
+            % monitor_sheetlet_boundaries_in3D
+            % Plots 3D sheetlet boundary surfaces by extruding each 2D
+            % polygon along the representative unit cell length.
+            %
+            % Inputs:
+            %   fig_no       - Figure number used for plotting.
+            %   fig_title    - Title displayed on the figure.
+            %   polygon_list - Cell array of 2D sheetlet polygon vertices.
+            %   RUC_l        - Representative unit cell length in x-direction.
+            %
+            % Output:
+            %   a            - Logical flag indicating successful function call.
+
             a = true;
 
             figure(fig_no)
@@ -74,6 +92,19 @@ classdef Plotting_Toolbox
 
         function fig1 = monitor_insheetlet_microstructure(fig_no, connected_p_list, graph_v1_branched,graph_v2_branched)
             
+            % monitor_insheetlet_microstructure
+            % Plots the intra-sheetlet microstructure as a 3D graph using
+            % node coordinates and graph connectivity.
+            %
+            % Inputs:
+            %   fig_no            - Figure number used for plotting.
+            %   connected_p_list  - Cell array of connected point coordinates.
+            %   graph_v1_branched - First vertex index list for graph edges.
+            %   graph_v2_branched - Second vertex index list for graph edges.
+            %
+            % Output:
+            %   fig1              - Placeholder output value.
+
             fig1 = 0;
             figure(fig_no)
 

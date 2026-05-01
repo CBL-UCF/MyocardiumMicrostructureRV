@@ -1,10 +1,26 @@
 classdef Coordinate_Toolbox
+
+    % Coordinate_Toolbox
+    % Utility class providing geometric operations for coordinate handling,
+    % transformations, distance calculations, and connectivity processing
+    % for sheetlet-based microstructural models.
     
     methods(Static)
         
         %% Function to get X,Y,Z coordinate list from a cell
         
         function [coordinates] = cell_to_double_coordinates(cell)
+
+            % cell_to_double_coordinates
+            % Converts a cell array of 3D coordinate vectors into a numeric
+            % Nx3 matrix for easier processing.
+            %
+            % Input:
+            %   cell        - Cell array where each entry is [x,y,z]
+            %
+            % Output:
+            %   coordinates - Nx3 numeric matrix of coordinates
+
             XX_coord=[];
             YY_coord=[];
             ZZ_coord=[];
@@ -20,9 +36,26 @@ classdef Coordinate_Toolbox
         end
         
         %% function to find coordinate modification amounts to translate
+
         %%coordinates to 'min point' befor develop mask
         
         function [coord_details] = Modification_amount_and_dimension(polygons,point_list,min_point)
+
+            % Modification_amount_and_dimension
+            % Computes translation offsets required to shift all coordinates
+            % so that the minimum point aligns with a given reference point.
+            % Also computes domain dimensions.
+            %
+            % Inputs:
+            %   polygons   - Voronoi polygon list (cell array of vertices)
+            %   point_list - List of 3D coordinates
+            %   min_point  - Desired minimum coordinate [x,y,z]
+            %
+            % Output:
+            %   coord_details:
+            %       row 1 -> [dx, dy, dz] translation amounts
+            %       row 2 -> [Lx, Ly, Lz] domain dimensions
+
             voronoi_vertex_y = [];
             voronoi_vertex_z = [];
             for i =1:length(polygons)
@@ -58,6 +91,18 @@ classdef Coordinate_Toolbox
         
         %% Modify all coordinates in a list to a minimum point
         function [Modified_RUC_coord] =  Modify_RUC_coord_mask(point_list1, modify_amount)
+
+            % Modify_RUC_coord_mask
+            % Applies a translation to all coordinates in a list so that the
+            % domain is shifted to a desired reference position.
+            %
+            % Inputs:
+            %   point_list1   - Cell array of 3D coordinates
+            %   modify_amount - Translation vector [dx, dy, dz]
+            %
+            % Output:
+            %   Modified_RUC_coord - Translated coordinate list
+
             XX_ruc_mask=[];
             YY_ruc_mask=[];
             ZZ_ruc_mask=[];
@@ -86,6 +131,18 @@ classdef Coordinate_Toolbox
         
         %% function to modify sheetlet coordinates to compatible with mask 
         function [Modified_sheetlets] = Modify_shtlt_coord(shtlt_list,modify_amount)
+
+            % Modify_shtlt_coord
+            % Applies translation to 2D sheetlet polygon coordinates to align
+            % them with the mask coordinate system.
+            %
+            % Inputs:
+            %   shtlt_list    - Cell array of polygon coordinates (y,z)
+            %   modify_amount - Translation vector [dx, dy, dz]
+            %
+            % Output:
+            %   Modified_sheetlets - Translated polygons
+
             Modified_sheetlets = cell(1,length(shtlt_list));
             
             for i = 1:length(shtlt_list)
@@ -96,6 +153,18 @@ classdef Coordinate_Toolbox
         
         %% function to calculate minimum distance between line segment and a point in 3D space
         function dis_pt = min_dis_line_point(v1_line,v2_line,Pt)
+
+            % min_dis_line_point
+            % Computes minimum distance between a 3D point and a line segment.
+            % Returns distance only if projection lies within segment bounds,
+            % otherwise returns a large value.
+            %
+            % Inputs:
+            %   v1_line, v2_line - Endpoints of the segment
+            %   Pt               - Query point
+            %
+            % Output:
+            %   dis_pt           - Minimum distance
 
             line_seg = v2_line - v1_line;
             unitV_line = line_seg/norm(line_seg);
@@ -121,20 +190,16 @@ classdef Coordinate_Toolbox
         %% function to calculate minimum distance between two line segments in 3D space
         function dis_min = min_dis_2lines(l1p1,l1p2,l2p1,l2p2)
 
-            %To find the minimum distance between two lines connecting 4
-            %points
-
-            %Variable name pattern: l1p2 = line 1 point 2
-
-            %Consider line 1 and line 2 in in parametric form l1p1+s1v1 and l2p1+s2v2
-            %(v1 and v2 are vectors)
-
-            %v= (v1 crossproducr v2) is dirrection vector for line M which is
-            %orthogonal to both line1 and line2
-
-            %get projections of points l1p1(m1) and l2p1(m2) into M line and calculate the
-            %distance between those two points will give the minimum distance between
-            %two lines
+            % min_dis_2lines
+            % Computes the minimum distance between two line segments in 3D,
+            % accounting for parallel and skew configurations.
+            %
+            % Inputs:
+            %   l1p1, l1p2 - Line 1 endpoints
+            %   l2p1, l2p2 - Line 2 endpoints
+            %
+            % Output:
+            %   dis_min    - Minimum distance between segments
 
 
 
@@ -274,6 +339,22 @@ classdef Coordinate_Toolbox
         %% function to get the arrays of sheetletwise interceonnected cells
         
         function [shtlt_wise_connection_list] = find_connected_cells(RUC_con_table_sheetlet_wise,Final_branches)
+            
+            % find_connected_cells
+            % Identifies neighboring/connected cells within each sheetlet based on
+            % shared vertices, and also includes connections to branch elements.
+            %
+            % Inputs:
+            %   RUC_con_table_sheetlet_wise - Cell array containing sheetlet-wise
+            %                                  connectivity tables.
+            %   Final_branches              - Cell array containing final branch
+            %                                  connectivity pairs.
+            %
+            % Output:
+            %   shtlt_wise_connection_list  - Sheetlet-wise list of connected cell
+            %                                  and branch indices.
+
+            
             glob_cell_add =0;
             n_shtlt = length(RUC_con_table_sheetlet_wise);
             shtlt_wise_connection_list = cell(n_shtlt,1);
@@ -341,6 +422,18 @@ classdef Coordinate_Toolbox
         %% function to generate global connectivity list
         
         function [Global_connection_list, N_cells_before_branch] = glob_con_list(shtlt_wise_connection_list)
+
+            % glob_con_list
+            % Combines sheetlet-wise connection lists into one global connection
+            % list and counts the number of cells before adding branch elements.
+            %
+            % Input:
+            %   shtlt_wise_connection_list - Sheetlet-wise cell connectivity list.
+            %
+            % Outputs:
+            %   Global_connection_list     - Global list of connected cell indices.
+            %   N_cells_before_branch      - Total number of non-branch cells.
+
             N_shtlt = length(shtlt_wise_connection_list);
             N_cells_before_branch = 0;
             Global_connection_list = {};
@@ -357,6 +450,18 @@ classdef Coordinate_Toolbox
         %% Function to rotate voronoi polygons by an angle around x axis
 
         function [Rotated_poly_list] = Rotate_2D_poly(poly_list,angle)
+
+            % Rotate_2D_poly
+            % Rotates a list of 2D polygon coordinates by a specified angle using
+            % the standard 2D rotation matrix.
+            %
+            % Inputs:
+            %   poly_list         - Cell array of polygon vertex coordinates.
+            %   angle             - Rotation angle in radians.
+            %
+            % Output:
+            %   Rotated_poly_list - Cell array of rotated polygon coordinates.
+
             R = [cos(angle), -sin(angle);sin(angle),cos(angle)];
             
             n_poly = length(poly_list);
@@ -379,6 +484,17 @@ classdef Coordinate_Toolbox
         
         %% Function to create stripe regions (vertical) from a square
         function [Regions] = CreateDevidedRegions(Domain, n_stripes)
+
+                % CreateDevidedRegions
+                % Divides a rectangular domain into equal vertical stripe regions.
+                %
+                % Inputs:
+                %   Domain    - Domain dimensions [width, height].
+                %   n_stripes - Number of vertical regions to create.
+                %
+                % Output:
+                %   Regions   - Cell array of polygon coordinates for each stripe.
+
             Regions =cell(1,n_stripes);
 
             for i = 1:n_stripes
@@ -396,6 +512,22 @@ classdef Coordinate_Toolbox
         %% Min distance between two segments
 
         function [distance, varargout] = DistBetween2Segment(p1, p2, p3, p4)
+
+            % DistBetween2Segment
+            % Computes minimum distance between two line segments and optionally
+            % returns closest points and connecting vector.
+            %
+            % Inputs:
+            %   p1, p2 - Segment 1 endpoints
+            %   p3, p4 - Segment 2 endpoints
+            %
+            % Outputs:
+            %   distance - Minimum distance
+            %   varargout:
+            %       (1) vector between closest points
+            %       (2) closest point on segment 1
+            %       (3) closest point on segment 2
+
             u = p1 - p2;
             v = p3 - p4;
             w = p2 - p4;

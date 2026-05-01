@@ -7,9 +7,9 @@
 
 % Dimensions of innitial box to get myocyte network inside sheetlets
 
-L_SLT = SLT_L; 
-W_SLT = SLT_W;
-T_SLT = SLT_T;
+L_shtlt = SLT_L; 
+W_shtlt = SLT_W;
+T_shtlt = SLT_T;
 
 
 
@@ -20,7 +20,7 @@ T_SLT = SLT_T;
                                         %between 10-20  micrometers (3,3 
                                         %gives normal distributionbut not 
                                         %smooth)
-f_rad = 10/2;
+fiber_radius = 10/2;
 
 % figure (1)
 % histogram(d_f,50)
@@ -49,10 +49,10 @@ ta = 0; %Transverse angle in radian
 %% Create points on face 1 (Without layers)
 
 %Number of fibre along fibre dirrection and within one cross section
-Nf_l = round(L_SLT/100);  %Considered 100 nanometer innitial distance between two myocites in fibre dirrection
+Nf_l = round(L_shtlt/100);  %Considered 100 nanometer innitial distance between two myocites in fibre dirrection
 
-vor_area = polyarea(Y_bp_v,Z_bp_v);
-Nf_f =  round((0.95*(vor_area)/(pi*f_rad^2)),0);
+vor_area = polyarea(Y_bp_vertex,Z_bp_vertex);
+Nf_f =  round((0.95*(vor_area)/(pi*fiber_radius^2)),0);
 
 
 
@@ -71,12 +71,12 @@ while p_face<Nf_f
 
     %P_x = -15+30*rand(1,1); % keeping variation of -15 to 30 micrometers for each vertex plane along x dirrection
     P_x = 0;
-    P_y = min_Y + rand(1,1)*W_SLT;
-    P_z = min_Z + rand(1,1)*T_SLT;
+    P_y = min_Y + rand(1,1)*W_shtlt;
+    P_z = min_Z + rand(1,1)*T_shtlt;
     
     %make sure that the points are inside the voronoi cell
     
-    inout_vor = inpolygon(P_y,P_z,Y_bp_v,Z_bp_v);
+    inout_vor = inpolygon(P_y,P_z,Y_bp_vertex,Z_bp_vertex);
     if ~inout_vor
         continue
     end
@@ -100,7 +100,7 @@ while p_face<Nf_f
     end
 
     %Make sure cardiomycytes in the region do not overlap each other  
-    if min(D_list)<2*f_rad
+    if min(D_list)<2*fiber_radius
         continue    
     else 
         Point_list{end+1} = [P_x,P_y,P_z];
@@ -109,7 +109,7 @@ while p_face<Nf_f
     end
 end
 Nf_f = length(face1_pt_list);
-area_frac = (Nf_f*pi*f_rad^2)/vor_area;
+area_frac = (Nf_f*pi*fiber_radius^2)/vor_area;
 
 area_frac_list(end+1) = area_frac;
  
@@ -130,8 +130,8 @@ end
 %in the whole point list
 
 
-max_var_yz = f_rad/3; %f_rad/3; %maximum variation in x and y coodinates of cell center line along a line = fibre diameter/3
-% max_var_yz = f_rad*1.5;
+max_var_yz = fiber_radius/3; %fiber_radius/3; %maximum variation in x and y coodinates of cell center line along a line = fibre diameter/3
+% max_var_yz = fiber_radius*1.5;
 
 rng_count = rng_count+5;
 rng(rng_count)
@@ -167,7 +167,7 @@ for pt=1:length(face1_pt_list)
             break
         end
         
-       if min(D_list)<2*f_rad
+       if min(D_list)<2*fiber_radius
             continue    
        else 
             Point_list{end+1} = [Px_new,Py_new,Pz_new];
@@ -220,7 +220,7 @@ for bp=1:Nf_f    %id of the basepoint that is extending
                 %ddd = DistBetween2Segment(v1,v2,v1_c,v2_c);
                 line_dis_list(end+1)=ddd;
                 break_extending_line = 0;
-                if ddd < 2*f_rad
+                if ddd < 2*fiber_radius
                     v2=v2_c;    %Since always v2_c is the one have higher 
                                 %x coordinate
                                 break_extending_line = 1;
@@ -301,7 +301,7 @@ end
 possible_branch_table = {};
 branch_table_coord = {};
 
-Vf_before_branch = fibreVolfrac(linewise_table,f_rad,L_SLT,vor_area);
+Vf_before_branch = fibreVolfrac(linewise_table,fiber_radius,L_shtlt,vor_area);
 
  
 branch_bp_count = round(1*length(face1_pt_list));  %Create branches in 
@@ -411,7 +411,7 @@ for Bp = 1:branch_bp_count
                 %         end
                 %     end
                 % end
-                if min(cell_spcaes)<2*f_rad
+                if min(cell_spcaes)<2*fiber_radius
                      branches_overlap = 1;
                      continue;
                 end
@@ -447,9 +447,9 @@ end
  
  Max_branch_vol = 0;
  for lines = 1:length(branch_table_coord)
-     Max_branch_vol = Max_branch_vol+pi*f_rad^2*norm(branch_table_coord{lines}{2}-branch_table_coord{lines}{1});
+     Max_branch_vol = Max_branch_vol+pi*fiber_radius^2*norm(branch_table_coord{lines}{2}-branch_table_coord{lines}{1});
  end
- Total_volume = L_SLT*vor_area;
+ Total_volume = L_shtlt*vor_area;
  Max_Vf_branched= 100*Max_branch_vol/Total_volume;
  
 Max_Vf_branched = Vf_before_branch+Max_Vf_branched
@@ -474,7 +474,7 @@ target_br_vol = target_br_vol_frac*Total_volume;
 Final_branches = {};
 for br_id = 1:length(random_branch_id)
     Final_branches{end+1} = possible_branch_table{random_branch_id(br_id)};
-    cur_br_vol = Myo_vol_calc(Final_branches,connected_p_list,f_rad);
+    cur_br_vol = Myo_vol_calc(Final_branches,connected_p_list,fiber_radius);
     if cur_br_vol>=target_br_vol
         break
     else

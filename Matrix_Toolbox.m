@@ -28,11 +28,8 @@ classdef Matrix_Toolbox
             %        test(i,j) = 0 -> a(i,j) is not equal to b(i,j) (or is NaN)
             %        test(i,j) = 1 -> a(i,j) is approximately equal to b(i,j)
             %
-            %   author : James Crawford 
-            %   created 01/08/2007
             %
-            %   history: v1.0 (01/08/2007)
-            %
+
             % get length of input matrix a
             [nr,nc] = size(a);
             % check input for consistency

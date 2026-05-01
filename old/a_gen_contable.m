@@ -4,7 +4,10 @@
 % Approximate sheetlet width(250 microm) and thickness(100 microm) used to
 % create voronoi patterns - Sheetlet_voronoi.m
 
-b_sheetlet_arrangement
+%b_sheetlet_arrangement
+[Shrinked_after_inf, Shrinked_after_inf_bp, Shrinked_after_inf_mid, non_shrink_vor_ruc, Nn, Ns] = Sheetlet_arrangement_Toolbox.generate_sheetlet_arrangement(RUC_w, RUC_t, shtlt_w, shtlt_t, shtlt_shrink_ratios);
+
+fig1 = Plotting_Toolbox.monitor_sheetlet_boundaries_in3D(1, 'Monitor Microstructure Construction', Shrinked_after_inf, RUC_l);
 
 sheetlet_face1 = Shrinked_after_inf;
 sheetlet_face1_bp = Shrinked_after_inf_bp;
@@ -41,9 +44,9 @@ for stlt = 1: stlt_count
     %cardiomyocyte chains inside the voronoi
     
     stlt_bp_boundary = sheetlet_face1_bp{1,stlt};
-    stlt_bp_boundary(end+1,:) = stlt_bp_boundary(1,:);
-    Y_bp_v = transpose(stlt_bp_boundary(:,1));
-    Z_bp_v = transpose(stlt_bp_boundary(:,2));
+    stlt_bp_boundary(end+1,:) = stlt_bp_boundary(1,:); % Add first point to close polygon
+    Y_bp_vertex = transpose(stlt_bp_boundary(:,1)); % Y coordinates of basepoint polygons
+    Z_bp_vertex = transpose(stlt_bp_boundary(:,2)); % Z coordinates of basepoint polygons
        
     
     c_sheetlet_innitial

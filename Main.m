@@ -2,17 +2,45 @@ clc; clear;close all;
 
 %% Generate microstructural connectivity table 
 
-global RUC_w RUC_t RUC_l Mesoscale ModelName
+global RUC_w RUC_t RUC_l shtlt_w shtlt_t Mesoscale ModelName shtlt_shrink_ratios
 
 ModelName = 'Micro_test_ORI';
 
 % Define whether generating microscale RUC or Mesoscale RUC
 Mesoscale = 1;
 
-% Define the size of RUC 
+% Define the size of Representative Unit Cell (RUC)
 RUC_w = 200;  
 RUC_t = 80;
 RUC_l = 500;
+
+% Sheetlet width and thickness
+shtlt_w = 200;
+shtlt_t = 45;
+
+% Shrink ratio for sheetlets in sheetlet and normal directions
+% Ratio[1] = shrink ratio for cleavage planes normal to sheetlet direction
+% Ratio[2] = shrink ratio for cleavage planes parallel to sheetlet direction
+% Each ratio value range  - (0.3, 1)
+
+shtlt_shrink_ratios = [0.955, 0.825]; 
+
+% Cardiomyocyte dimensions
+innitial_myocyte_diameter = 10;
+myocyte_length_range = [100, 120]; % [minimum myocyte length, maximum myocyte length]
+max_fibredir_deviation = innitial_myocyte_diameter / 6; % maximum deviation in sheetlet-normal plane per cardiomyocyte length
+
+
+% Sheetlet innitial volume fraction
+shtlt_ICV = 0.95;
+
+
+% Technical values
+randomization_breakpoint = 500000;
+
+RUC_microstructure_Toolbox.generate_ruc_myoconnectivity(RUC_w, RUC_t, RUC_l, shtlt_w, shtlt_t, ...
+    shtlt_shrink_ratios, innitial_myocyte_diameter, myocyte_length_range, shtlt_ICV, ...
+    max_fibredir_deviation, randomization_breakpoint)
 
 a_gen_contable
 

@@ -610,6 +610,25 @@ classdef Coordinate_Toolbox
             varargout(3) = {p4+tc*v};   % Closest point on object 2
             
         end
+
+        function d = min_dis_point_to_line(pt, v1, v2)
+            a = v1 - v2;
+            b = pt - v2;
+            
+            p = v2+a.*(dot(a,b)/(norm(a)^2));
+            c1 = v2-p;
+            c2 = v1-p;
+            
+            
+            %Return correct distance if the point is located in the range of line
+            %segment and return higher distance(5000) if the points are outside the
+            %range of line segment
+            if dot(c1,c2)>0
+                d = 5000;
+            else
+                d = norm(cross(a,b)) / norm(a);
+            end
+        end
         
         
         

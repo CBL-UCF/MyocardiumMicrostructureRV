@@ -405,7 +405,7 @@ if Mesoscale == 1
                         shtlt1_myocytes = connectivity_array{shtlt1};
                         shtlt2_myocytes = connectivity_array{shtlt2};
                         
-                        cell_spcaes = [];
+                        branch_clearance = [];
                         for cell2 = 1: length(shtlt1_myocytes)
                             ch_v1_in = shtlt1_myocytes{cell2}(1);
                             ch_v2_in = shtlt1_myocytes{cell2}(2);
@@ -413,9 +413,9 @@ if Mesoscale == 1
                             %node
                             D_cells = min_dis_2lines(cb_v1,cb_v2,points_stlt1{ch_v1_in},points_stlt1{ch_v2_in});
                             if D_cells==0
-                                cell_spcaes(end+1) = 1000000;
+                                branch_clearance(end+1) = 1000000;
                             else
-                                cell_spcaes(end+1) = D_cells; 
+                                branch_clearance(end+1) = D_cells; 
                             end
                             
                             
@@ -427,13 +427,13 @@ if Mesoscale == 1
                             %node
                             D_cells = min_dis_2lines(cb_v1,cb_v2,points_stlt2{ch_v1_in},points_stlt2{ch_v2_in});
                             if D_cells==0
-                                cell_spcaes(end+1) = 1000000;
+                                branch_clearance(end+1) = 1000000;
                             else
-                                cell_spcaes(end+1) = D_cells; 
+                                branch_clearance(end+1) = D_cells; 
                             end
                         end
                         
-                        if min(cell_spcaes)<2*f_rad %from sheetlet innitial
+                        if min(branch_clearance)<2*f_rad %from sheetlet innitial
                            branches_overlap = 1;
                            continue;
                         end

@@ -6,7 +6,7 @@ classdef Sheetlet_arrangement_Toolbox
     
     methods(Static)
 
-        function [Shrinked_after_inf, Shrinked_after_inf_bp, Shrinked_after_inf_mid, non_shrink_vor_ruc, Nn, Ns] = generate_sheetlet_arrangement( ...
+        function [Shrinked_after_inf, Shrinked_after_inf_bp, Shrinked_after_inf_mid, non_shrink_vor_ruc, Nn, Ns, seed_array, vor_vertex] = generate_sheetlet_arrangement( ...
                 RUC_w, RUC_t, shtlt_w, shtlt_t, shtlt_shrink_ratios)
 
             % Function - generate_sheetlet_arrangement

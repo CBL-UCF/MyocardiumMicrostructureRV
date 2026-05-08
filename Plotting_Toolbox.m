@@ -90,7 +90,7 @@ classdef Plotting_Toolbox
 
         % ----------------------------------------------------------------%
 
-        function fig1 = monitor_insheetlet_microstructure(fig_no, connected_p_list, graph_v1_branched,graph_v2_branched)
+        function fig1 = plot_microstructure(fig_no, connected_p_list, graph_v1_branched,graph_v2_branched)
             
             % monitor_insheetlet_microstructure
             % Plots the intra-sheetlet microstructure as a 3D graph using
@@ -125,6 +125,10 @@ classdef Plotting_Toolbox
             pp.YData=YY;
             pp.ZData=ZZ;
         end
+
+        % ----------------------------------------------------------------%
+
+        
 
     end
 

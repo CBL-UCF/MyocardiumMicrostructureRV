@@ -11,7 +11,7 @@ classdef Sheetlet_microstructure_Toolbox
 
         function [face1_pt_list, connected_p_list, con_table_branched_final, graph_v1_branched, graph_v2_branched, linewise_point_list] = generate_insheetlet_microstructure(L_shtlt, ...
                 min_Y, min_Z, max_Y, max_Z, fiber_diameter, fiber_length_range, shtlt_ICV, ...
-                Y_bp_vertex, Z_bp_vertex, max_fibredir_deviation, target_ICV_sheetlet, randomization_breakpoint, rng_count)
+                Y_bp_vertex, Z_bp_vertex, max_fibredir_deviation, randomization_breakpoint, rng_count)
 
             % Function - generate_insheetlet_microstructure
             % Generates an intra-sheetlet cardiomyocyte network by placing
@@ -84,11 +84,11 @@ classdef Sheetlet_microstructure_Toolbox
 
             Total_volume = L_shtlt * vor_area;
 
-            [con_table_branched_final, graph_v1_branched, graph_v2_branched] = Sheetlet_microstructure_Toolbox.select_final_branches(target_ICV_sheetlet, ...
+            [con_table_branched_final, graph_v1_branched, graph_v2_branched] = Sheetlet_microstructure_Toolbox.select_final_branches(shtlt_ICV, ...
                 Vf_before_branch, fiber_radius, Total_volume, branch_table_coord, possible_branch_table, graph_v1, graph_v2, connected_p_list);
 
             % Monitor generate microstructure in 3D plot
-            fig1 = Plotting_Toolbox.monitor_insheetlet_microstructure(1, connected_p_list, graph_v1_branched,graph_v2_branched);
+            fig1 = Plotting_Toolbox.plot_microstructure(1, connected_p_list, graph_v1_branched,graph_v2_branched);
 
         end
 

@@ -20,8 +20,8 @@ if Construct_connectivity
     Mesoscale = 1;
     
     % Define the size of Representative Unit Cell (RUC)
-    RUC_w = 200;  
-    RUC_t = 80;
+    RUC_w = 500;  
+    RUC_t = 500;
     RUC_l = 500;
     
     % Sheetlet width and thickness
@@ -67,22 +67,21 @@ else
     % Load required parameters from previously saved workspace
     workspace_address = append(ModelName,'_conData.mat');
     
-    load(workspace_address,'Final_branches');
-    load(workspace_address,'non_shrink_vor_ruc');
-    load(workspace_address,'RUC_con_table_branched');
-    load(workspace_address,'RUC_con_table_sheetlet_wise');
-    load(workspace_address,'RUC_con_v1_branched');
-    load(workspace_address,'RUC_con_v2_branched');
-    load(workspace_address,'RUC_v_coord');
-    load(workspace_address,'Shrinked_after_inf');
-    load(workspace_address,'Shrinked_after_inf_mid');
-    load(workspace_address,'RUC_w','RUC_t','RUC_l');
-
+    load(workspace_address,'Final_branches', ...
+        'non_shrink_vor_ruc', ...
+        'RUC_con_table_branched', ...
+        'RUC_con_table_sheetlet_wise', ...
+        'RUC_con_v1_branched', ...
+        'RUC_con_v2_branched', ...
+        'RUC_v_coord', ...
+        'Shrinked_after_inf', ...
+        'Shrinked_after_inf_mid', ...
+        'RUC_w','RUC_t','RUC_l');
 end
 
 
 
-%% Perform alterations on coordinate system (Rotations and Translations of microstructure)
+%% Perform alterations on coordinate system (Rotations and Translations of microstructure) and Cutout a cubical region of interest
 
 % Translate the full RUC so that the minimum point of the model aligns with
 % a defined reference point.
@@ -107,20 +106,27 @@ fig3 = Plotting_Toolbox.plot_microstructure(3, Modified_point_list, RUC_con_v1_b
 % Save translated microstructure and sheetlet information for mechanics input
 save(append(ModelName,'_mechInput.mat'),"RUC_w","RUC_l","RUC_t","Modified_coordinates","Modified_sheetlet_regions","RUC_con_table_sheetlet_wise")
 
+% Cutout a ROI - TODO
+ROI_min_point = [60, 100, 100];
+ROI_dimesntion = [500, 500, 500];
 
-%% Generte required cell lists
+%% Generate Voxelwise mesh for vertual MR simulation
 
 % Generate geometric cell lists for the complete network, sheetlet-wise
 % myocytes, and inter-sheetlet branches.
-all_cell_list = Mask_generate_Toolbox.gen_cell_detail_list(RUC_con_table_branched,Modified_point_list,12);
+all_cell_list = Mask_generation_Toolbox.gen_cell_detail_list(RUC_con_table_branched,Modified_point_list,12);
+shtlt_wise_cell_list = Mask_generation_Toolbox.Sheetletwise_cell_details(RUC_con_table_sheetlet_wise,Modified_point_list,12);
+inter_shtlt_branch_list = Mask_generation_Toolbox.gen_cell_detail_list(Final_branches,Modified_point_list,12);
 
-shtlt_wise_cell_list = Mask_generate_Toolbox.Sheetletwise_cell_details(RUC_con_table_sheetlet_wise,Modified_point_list,12);
-
-inter_shtlt_branch_list = Mask_generate_Toolbox.gen_cell_detail_list(Final_branches,Modified_point_list,12);
-
-% Save mechanics input data
-save(append(ModelName,'_mechInput.mat'),"RUC_w","RUC_l","RUC_t","Modified_coordinates","Modified_sheetlet_regions","RUC_con_table_sheetlet_wise")
-
-%%
 % Generate mask
-e_generate_mask
+
+[mask_ROI, mask_ROI_id, Reshaped_mask, Reshaped_mask_id, vol_frac] = Mask_generation_Toolbox.Generate_mask(RUC_dim, all_cell_list, shtlt_wise_cell_list, inter_shtlt_branch_list, Modified_sheetlet_regions, Modified_mid_sheetlets, ROI_min_point, ROI_dimesntion, RUC_con_table_sheetlet_wise, Final_branches);
+
+print(vol_frac)
+
+% Save .mat for diffusion simulation
+filename = 'RUC_micro_vf55_diff.mat';
+Cells_mask = ROI_mask;
+Cell_params = ROI_mask;
+
+save(filename,"Cells_mask", "Cell_params");

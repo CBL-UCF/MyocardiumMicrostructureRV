@@ -1,11 +1,175 @@
 classdef Mask_reshape_Toolbox
 
     % Mask_reshape_Toolbox
-    % Utility class for post-processing voxel masks, including inter-cell
-    % distance calculations, slice-based corrections, and spatial perturbations.    
+    %
+    % Utility class for post-processing voxelized myocardial masks.
+    %
+    % The reshaping procedure is designed to improve cellular continuity
+    % and produce more realistic cell boundaries after voxelization.
+    %
+    % Main operations:
+    %   1. Recover disconnected intracellular voxels between adjacent slices.
+    %   2. Introduce controlled slice perturbations ("shaking") to avoid
+    %      unrealistic voxel alignment.
+    %   3. Define cellular boundaries while preserving connectivity between
+    %      physically connected cardiomyocytes.
+    %   4. Generate masks suitable for diffusion simulations and image-based
+    %      analyses.
+
     methods(Static)
+
+        % ----------------------------------------------------------------%
+        % function to perform first reshaping step (shaking slces)
+        function [reshaped_cell_mask_id] = reshape_mask_shake_slices(cell_mask_id, reshaped1_rgnwise_cell_list, Rgn_wise_voxel_list)
+            
+            % reshape_mask_shake_slices
+            %
+            % Performs the first mask-reshaping stage by introducing small random
+            % slice-wise perturbations and restoring cellular continuity between
+            % neighboring slices.
+            %
+            % The procedure:
+            %   1. Randomly shifts the next slice within a prescribed range.
+            %   2. Compares the shifted slice with the current slice.
+            %   3. Identifies voxels belonging to the same cardiomyocyte that are
+            %      present in the shifted slice but absent in the current slice.
+            %   4. Restores those voxels to improve continuity of cellular geometry.
+            %
+            % Inputs:
+            %   cell_mask_id               - Cell-ID mask before reshaping.
+            %   reshaped1_rgnwise_cell_list
+            %                              - Region-wise cell information.
+            %   Rgn_wise_voxel_list        - Region-wise voxel coordinates.
+            %
+            % Output:
+            %   reshaped_cell_mask_id      - Cell-ID mask after slice-based
+            %                                continuity correction.
+
+            mask_dim = size(cell_mask_id);
+            reshaped_temp_cell_mask_id = cell_mask_id;
+            reshaped_cell_mask_id = cell_mask_id;
+            
+            for itr =1:6
+                for slice = 1:mask_dim(1)-1
+                    slice_pre = squeeze(reshaped_temp_cell_mask_id(slice,:,:));
+                    slice_nxt = squeeze(reshaped_temp_cell_mask_id(slice+1,:,:));
+            
+                    shaked_slice_nxt = Mask_reshape_Toolbox.Shake_slice(slice_nxt,1,1,2);
+            
+            
+                    [slice_pre_reshaped] = Mask_reshape_Toolbox.fill_prev_slice(slice,slice_pre,shaked_slice_nxt,Rgn_wise_voxel_list,reshaped1_rgnwise_cell_list);
+            
+                    reshaped_cell_mask_id(slice,:,:) =  slice_pre_reshaped;   
+                end
+                reshaped_temp_cell_mask_id = reshaped_cell_mask_id;
+            end
+
+        end
+
+        % ----------------------------------------------------------------%
+
+        function [reshaped_mask_id] = reshape_mask_define_cellboundary(shaked_mask_id, Global_connection_list, N_cells_before_branch)
+            
+            % reshape_mask_define_cellboundary
+            %
+            % Performs the second mask-reshaping stage by enforcing boundaries
+            % between neighboring cardiomyocytes.
+            %
+            % Adjacent voxels are examined in both vertical and horizontal
+            % directions. A boundary is inserted whenever neighboring voxels belong
+            % to different cells that are not physically connected according to the
+            % global connectivity graph.
+            %
+            % This prevents unrelated cardiomyocytes from sharing voxel boundaries
+            % while preserving continuity across valid cell-cell connections and
+            % branch locations.
+            %
+            % Inputs:
+            %   shaked_mask_id        - Cell-ID mask after slice perturbation.
+            %   Global_connection_list
+            %                         - List of physically connected cells and
+            %                           branches.
+            %   N_cells_before_branch - Number of cardiomyocytes prior to branch
+            %                           insertion.
+            %
+            % Output:
+            %   reshaped_mask_id      - Final reshaped mask with cell boundaries
+            %                           enforced.
+
+            mask_dim = size(shaked_mask_id);
+            reshaped_mask_id = shaked_mask_id;
+
+            %add boundaries using verticle columns of pixels
+            for slice = 1:1:mask_dim(1)
+                slice_mask = squeeze(reshaped_mask_id(slice,:,:));
+            
+                slc_dim = size(slice_mask);
+                for col = 1:slc_dim(2)-1
+                    col_pre = slice_mask(:,col);
+                    col_nxt = slice_mask(:,col+1);
+                    
+                    for i = 1:slc_dim(1)
+                        pix1 = min(col_pre(i,1),col_nxt(i,1));
+                        pix2 = max(col_pre(i,1),col_nxt(i,1));
+                        
+                        cons=[];
+                        if pix1 < N_cells_before_branch && pix1>0
+                            cons = Global_connection_list{pix1};
+                        end
+                        
+                        if pix1==0 || pix2 ==0
+                            continue;
+                        elseif pix1 == pix2
+                            continue;
+                        elseif ismember(pix2,cons)
+                            continue;
+                        else
+                            col_nxt(i,1) = 0;
+                        end
+                    end
+                    slice_mask(:,col+1) = col_nxt;
+                end
+                reshaped_mask_id(slice,:,:) = slice_mask;
+            end 
+
+            %add boundaries using horizontal rows of pixels
+
+            for slice = 1:1:mask_dim(1)
+                slice_mask = squeeze(reshaped_mask_id(slice,:,:));
+            
+                slc_dim = size(slice_mask);
+                for raw = 1:slc_dim(1)-1
+                    raw_pre = slice_mask(raw,:);
+                    raw_nxt = slice_mask(raw+1,:);
+                    
+                    for i = 1:slc_dim(2)
+                        pix1 = min(raw_pre(1,i),raw_nxt(1,i));
+                        pix2 = max(raw_pre(1,i),raw_nxt(1,i));
+                        
+                        cons=[];
+                        if pix1 < N_cells_before_branch && pix1>0
+                            cons = Global_connection_list{pix1};
+                        end
+                        
+                        if pix1==0 || pix2 ==0
+                            continue;
+                        elseif pix1 == pix2
+                            continue;
+                        elseif ismember(pix2,cons)
+                            continue;
+                        else
+                            raw_nxt(1,i) = 0;
+                        end
+                    end
+                    slice_mask(raw+1,:) = raw_nxt;
+                end
+                reshaped_mask_id(slice,:,:) = slice_mask;
+            end 
+            
+        end
         
-        %% function to create array including intercell distances between a given list of cells
+        % ----------------------------------------------------------------%
+        % function to create array including intercell distances between a given list of cells
         
         function [intercell_dis] = cell_distance_array(N_cells,cell_list)
             
@@ -48,8 +212,8 @@ classdef Mask_reshape_Toolbox
         end
         
 
-        
-        %% function to fill the ecv voxels of the previous slice which are filled by the same myocyte 
+        % ----------------------------------------------------------------%
+        % function to fill the ecv voxels of the previous slice which are filled by the same myocyte 
         % in the next slice
         
         function [slice_pre_reshaped] = fill_prev_slice(slice_no,slice_pre,slice_nxt,Rgn_wise_voxel_list,Rgn_wise_cell_list)
@@ -101,8 +265,8 @@ classdef Mask_reshape_Toolbox
             end
             
         end
-        
-     %% Function to shake a slice of mask   
+        % ----------------------------------------------------------------%
+        % Function to shake a slice of mask   
         
         function [shaked_slice] = Shake_slice(mask_slice,horizontal,vertical,range)
 
@@ -155,20 +319,11 @@ classdef Mask_reshape_Toolbox
             else
                 shaked_slice = hshaked_slice;
             end
-                    
+            % ----------------------------------------------------------------%    
         
         
-        end
-        
-       
-        %%
-        
-        
-        
-        
-        
-        
-        
+        end     
+                
         
     end
     

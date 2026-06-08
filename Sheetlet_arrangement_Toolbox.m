@@ -106,16 +106,18 @@ classdef Sheetlet_arrangement_Toolbox
             
             for pts = 1:Ns
                 for ptn = 1:Nn
-                    if rem(pts,2)==1
-                        z=0;
-                    else
-                        z = 0;%0.02*Slt_t; %0.05*Slt_t;
-                    end
-                    if rem(ptn,2)==1
-                        y=0;
-                    else
-                        y = 0; %0.02*Slt_w; %0.5*Slt_t;
-                    end
+                    % if rem(pts,2)==1
+                    %     z=0;
+                    % else
+                    %     z = 0;%0.02*Slt_t; %0.05*Slt_t;
+                    % end
+                    % if rem(ptn,2)==1
+                    %     y=0;
+                    % else
+                    %     y = 0; %0.02*Slt_w; %0.5*Slt_t;
+                    % end
+                    z = 0;
+                    y = 0;
                     if rem(ptn,2)==1
                         y=y+(pts+0.46+0.08*rand())*Slt_w;
                         z=z+(ptn+0.48+0.04*rand())*Slt_t;

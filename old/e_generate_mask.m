@@ -2,7 +2,7 @@
 % Convert RUC dimensions to physical voxel size (meters)
 voxel = RUC_dim.*1e-6;
 
-% Define voxel resolution (size of each voxel)
+% Define voxel resolution (size of each voxel in meters)
 Resolution = voxel./RUC_dim;
 
 % Number of sheetlets in the model

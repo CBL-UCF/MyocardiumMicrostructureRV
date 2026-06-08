@@ -1,9 +1,38 @@
 classdef RUC_microstructure_Toolbox
 
+    % RUC_microstructure_Toolbox
+    %
+    % Utility class for generating representative unit cell (RUC)
+    % myocardial microstructures. The workflow includes:
+    %   - Sheetlet arrangement generation
+    %   - Intra-sheetlet cardiomyocyte connectivity generation
+    %   - Global connectivity assembly
+    %   - Neighbouring sheetlet identification
+    %   - Common-edge detection
+    %   - Inter-sheetlet branch generation
+    %   - Branch filtering to achieve target intracellular volume fraction
+    %
+    % The generated microstructure can subsequently be voxelized and used
+    % for diffusion simulations or mechanical modeling.
+
     methods(Static)
 
         function [RUC_con_table_branched, RUC_v_coord, RUC_con_v1_branched, RUC_con_v2_branched, Final_branches, non_shrink_vor_ruc, RUC_con_table_sheetlet_wise, Shrinked_after_inf, Shrinked_after_inf_mid] = generate_ruc_myoconnectivity(RUC_w, RUC_t, RUC_l, shtlt_w, shtlt_t, shtlt_shrink_ratios, fiber_diameter, fiber_length_range, shtlt_ICV, appx_target_ICV, max_fibredir_deviation, branching_reg_thickness, randomization_breakpoint)
             
+            % generate_ruc_myoconnectivity
+            %
+            % Main workflow for generating a complete myocardial RUC.
+            %
+            % Steps:
+            %   1. Generate sheetlet arrangement.
+            %   2. Generate cardiomyocyte connectivity within each sheetlet.
+            %   3. Assemble sheetlet-wise connectivity into a global graph.
+            %   4. Identify neighbouring sheetlets.
+            %   5. Detect common sheetlet boundaries.
+            %   6. Generate potential inter-sheetlet branches.
+            %   7. Select branches to achieve the target volume fraction.
+            %   8. Return the final branched connectivity representation.
+
             % ____________________________________________________________%
             % Generate sheetlet arrangement on first face and plot to
             % monitor microstructure constructuin
@@ -94,6 +123,13 @@ classdef RUC_microstructure_Toolbox
         function [coordinate_array, connectivity_array, connectivity_V1_array, connectivity_V2_array, face1_point_array, linewise_point_array] = generate_sheetlet_wise_connectivity(sheetlet_face1, ...
                 sheetlet_face1_bp, RUC_l, shtlt_ICV, fiber_diameter, fiber_length_range, max_fibredir_deviation, randomization_breakpoint)
             
+            % generate_sheetlet_wise_connectivity
+            %
+            % Generates cardiomyocyte microstructure independently inside
+            % each sheetlet region. Connectivity, graph representation,
+            % base points, and line-wise point chains are stored separately
+            % for each sheetlet.
+
             stlt_count = length(sheetlet_face1);
             rng_count = 0;
 
@@ -148,6 +184,19 @@ classdef RUC_microstructure_Toolbox
 
         function [RUC_v_coord, RUC_con_table, RUC_con_table_sheetlet_wise, RUC_con_v1, RUC_con_v2] = Define_single_connectivity_for_RUC(coordinate_array, connectivity_array)
             
+            % Define_single_connectivity_for_RUC
+            %
+            % Concatenates all sheetlet-wise coordinate and connectivity
+            % information into a single global graph representation of the
+            % representative unit cell.
+            %
+            % Outputs:
+            %   RUC_v_coord              - Global node coordinate list.
+            %   RUC_con_table            - Global connectivity table.
+            %   RUC_con_table_sheetlet_wise
+            %                           - Sheetlet-wise connectivity.
+            %   RUC_con_v1, RUC_con_v2  - Graph edge definitions.
+
             % Concaternate coordinate list
             RUC_v_coord = {};
 
@@ -194,6 +243,16 @@ classdef RUC_microstructure_Toolbox
         % ----------------------------------------------------------------%
 
         function [Neghbour_stlt__rucid] = identify_neighbouring_sheetlets(seed_array, Nn, Ns)
+            
+            % identify_neighbouring_sheetlets
+            %
+            % Uses Delaunay triangulation of sheetlet seed points to
+            % identify neighbouring sheetlets within the representative
+            % unit cell.
+            %
+            % Neighbor relationships are re-indexed to correspond to the
+            % sheetlet numbering used after removal of outer and unbounded
+            % Voronoi regions.
 
             DT_ruc_before = delaunayTriangulation(seed_array);
 
@@ -273,6 +332,17 @@ classdef RUC_microstructure_Toolbox
 
         function  [common_edge_array_ruc] = find_common_edges(Neghbour_stlt__rucid, non_shrink_vor_ruc, min_edgelength, vor_vertex)
             
+            % find_common_edges
+            %
+            % Determines shared boundaries between neighbouring sheetlets.
+            %
+            % Outputs an array containing:
+            %   - Sheetlet pair IDs
+            %   - Shared edge coordinates
+            %   - Edge length
+            %
+            % Edges shorter than a specified threshold are discarded.
+
             %identifying shared edges
             common_edges_ruc = {};
             for stlt7 = 1: length(Neghbour_stlt__rucid)
@@ -345,6 +415,15 @@ classdef RUC_microstructure_Toolbox
         %-----------------------------------------------------------------%
 
         function [Possible_Edge_wise_branches] = find_potential_intersheetlet_branches(RUC_v_coord, common_edge_array_ruc, face1_point_array, coordinate_array, connectivity_array, branching_reg_thickness, linewise_point_array, f_rad)
+            
+            % find_potential_intersheetlet_branches
+            %
+            % Identifies candidate branches between neighbouring sheetlets.
+            %
+            % Candidate branches are generated only from cardiomyocyte
+            % chains located within a prescribed distance from a common
+            % sheetlet boundary.
+            
             Possible_Edge_wise_branches = {};
     
             no_of_nodes = length(RUC_v_coord);
@@ -425,98 +504,118 @@ classdef RUC_microstructure_Toolbox
                 shtlt1, shtlt2, stlt1_effective_bp_list, points_stlt2_f1, linewise_point_array, coordinate_array, ...
                 points_stlt1, points_stlt2, connectivity_array, node_branch_count, f_rad)
 
-                BP1_coord = stlt1_effective_bp_list{1,bp_no1};
-                dis_bp1_bp2 = [];
-                %Check the distances with all other base points in the adjacent
-                %sheetlet
-                for pid = 1:length(points_stlt2_f1)
-                    dis_bp1_bp2(end+1) = norm(points_stlt2_f1{pid}-BP1_coord);
-                end
-                [dis_bps,BP2_eff_list] = sort(dis_bp1_bp2); %get the closest sorted cardiomyocyte chains from selected BP1 chain
-                
-                Branches_for_BP1 = {};
-                for itra = 1: 4
-                    I=BP2_eff_list(itra);
-                    BP2_coord = points_stlt2_f1{I}; %This is the closest base point in sheetlet 2(face1) to the selected basepoint in sheetlet 1
-                    
-                    linewise_BP1 = linewise_point_array{1,shtlt1}{1,stlt1_effective_bp_list{2,bp_no1}};
-                    linewise_BP2 = linewise_point_array{1,shtlt2}{1,I};
-                    
-                    %Find all possible branches that can be created between these two
-                    %chains adhering to overlapping and dirrection constraints
-                    
-            
-                    %select a vertex from extended chain of base point 1, connect it to
-                    %the next face vertex of the adjacent sheetlet cardiomyocyte chain
-                    %and check whether if it is possible to have that branch
-                    
-                    max_vertex_id = min(length(linewise_BP1),length(linewise_BP2))-1;
-                    
-                    % Iterate through vertexes in cell chain
-                    for itr1 = 1:max_vertex_id
-                    
-                        cb_v1_id = itr1 ;             %Cleavage branch vertex 1 is from the sheetlet 1
-                        cb_v2_id = cb_v1_id + 1;      %vertex 2 from the adjacent myocyte chain is selected from next face 
-                                                      %from V1 to maintain preferential
-                                                      %dirrection of cariomyocytes
-                        
-                        cb_v1 = linewise_BP1{cb_v1_id};
-                        cb_v2 = linewise_BP2{cb_v2_id};
-                        
-                        %Check whether the branch is already exist in the chain
+            % find_potential_branches_cellchain
+            %
+            % Generates candidate branches between two neighboring
+            % cardiomyocyte chains.
+            %
+            % Candidate branches must satisfy:
+            %   - No duplicate connectivity
+            %   - No overlap with existing cardiomyocytes
+            %   - Node branch-count restrictions
+            %
+            % Valid branches are returned for later filtering.
 
-                        cb_v1_graph_id = RUC_microstructure_Toolbox.find_coord_id(coordinate_array,cb_v1,shtlt1);
-                        cb_v2_graph_id = RUC_microstructure_Toolbox.find_coord_id(coordinate_array,cb_v2,shtlt2);
-                        branch_exist = 0;
-                        for cell1 = 1:length(Branches_for_BP1)
-                            if [cb_v1_graph_id,cb_v2_graph_id] == Branches_for_BP1{cell1} | [cb_v2_graph_id,cb_v1_graph_id] == Branches_for_BP1{cell1}
-                                branch_exist = 1;
-                                break;
-                            end
-                        end
-
-
-                        if ~branch_exist
-                            branches_overlap = 0;
-                            %Should check whether this branch is overlaping with any other
-                            %cardiomyocyte
-            
-                            shtlt1_myocytes = connectivity_array{shtlt1};
-                            shtlt2_myocytes = connectivity_array{shtlt2};
-                            
-                            branch_clearance = RUC_microstructure_Toolbox.find_branch_clearance(cb_v1, cb_v2, shtlt1_myocytes, shtlt2_myocytes, points_stlt1, points_stlt2);
-                            
-                            if min(branch_clearance) < 2*f_rad %from sheetlet innitial
-                               branches_overlap = 1;
-                               continue;
-                            end
-                        end
-
-                        %cHECK WHETHER THE SAME NODE HAS MORE THAN TWO BRANCHES
-                        branch_count_per_node_exeed = 0;
-                        if node_branch_count(1,cb_v1_graph_id)>0 || node_branch_count(1,cb_v2_graph_id)>0
-                            branch_count_per_node_exeed = 1;
-                        end
-                        
-                        % if the branch is not already available and branch is not
-                        % overlapping with any other cardiomyocytes in the ruc, branch
-                        % is added to a cardiomyocyte chainwise list
-                        
-                        if ~branches_overlap && ~branch_exist && ~branch_count_per_node_exeed
-                            node_branch_count(cb_v1_graph_id) = node_branch_count(cb_v1_graph_id)+1;
-                            node_branch_count(cb_v2_graph_id) = node_branch_count(cb_v2_graph_id)+1;
-                            
-                            Branches_for_BP1{end+1} = [cb_v1_graph_id,cb_v2_graph_id];
-                        end
-
-                    end
-                end
-
+            BP1_coord = stlt1_effective_bp_list{1,bp_no1};
+            dis_bp1_bp2 = [];
+            %Check the distances with all other base points in the adjacent
+            %sheetlet
+            for pid = 1:length(points_stlt2_f1)
+                dis_bp1_bp2(end+1) = norm(points_stlt2_f1{pid}-BP1_coord);
             end
+            [dis_bps,BP2_eff_list] = sort(dis_bp1_bp2); %get the closest sorted cardiomyocyte chains from selected BP1 chain
+            
+            Branches_for_BP1 = {};
+            for itra = 1: 4
+                I=BP2_eff_list(itra);
+                BP2_coord = points_stlt2_f1{I}; %This is the closest base point in sheetlet 2(face1) to the selected basepoint in sheetlet 1
+                
+                linewise_BP1 = linewise_point_array{1,shtlt1}{1,stlt1_effective_bp_list{2,bp_no1}};
+                linewise_BP2 = linewise_point_array{1,shtlt2}{1,I};
+                
+                %Find all possible branches that can be created between these two
+                %chains adhering to overlapping and dirrection constraints
+                
+        
+                %select a vertex from extended chain of base point 1, connect it to
+                %the next face vertex of the adjacent sheetlet cardiomyocyte chain
+                %and check whether if it is possible to have that branch
+                
+                max_vertex_id = min(length(linewise_BP1),length(linewise_BP2))-1;
+                
+                % Iterate through vertexes in cell chain
+                for itr1 = 1:max_vertex_id
+                
+                    cb_v1_id = itr1 ;             %Cleavage branch vertex 1 is from the sheetlet 1
+                    cb_v2_id = cb_v1_id + 1;      %vertex 2 from the adjacent myocyte chain is selected from next face 
+                                                  %from V1 to maintain preferential
+                                                  %dirrection of cariomyocytes
+                    
+                    cb_v1 = linewise_BP1{cb_v1_id};
+                    cb_v2 = linewise_BP2{cb_v2_id};
+                    
+                    %Check whether the branch is already exist in the chain
+
+                    cb_v1_graph_id = RUC_microstructure_Toolbox.find_coord_id(coordinate_array,cb_v1,shtlt1);
+                    cb_v2_graph_id = RUC_microstructure_Toolbox.find_coord_id(coordinate_array,cb_v2,shtlt2);
+                    branch_exist = 0;
+                    for cell1 = 1:length(Branches_for_BP1)
+                        if [cb_v1_graph_id,cb_v2_graph_id] == Branches_for_BP1{cell1} | [cb_v2_graph_id,cb_v1_graph_id] == Branches_for_BP1{cell1}
+                            branch_exist = 1;
+                            break;
+                        end
+                    end
+
+
+                    if ~branch_exist
+                        branches_overlap = 0;
+                        %Should check whether this branch is overlaping with any other
+                        %cardiomyocyte
+        
+                        shtlt1_myocytes = connectivity_array{shtlt1};
+                        shtlt2_myocytes = connectivity_array{shtlt2};
+                        
+                        branch_clearance = RUC_microstructure_Toolbox.find_branch_clearance(cb_v1, cb_v2, shtlt1_myocytes, shtlt2_myocytes, points_stlt1, points_stlt2);
+                        
+                        if min(branch_clearance) < 2*f_rad %from sheetlet innitial
+                           branches_overlap = 1;
+                           continue;
+                        end
+                    end
+
+                    %cHECK WHETHER THE SAME NODE HAS MORE THAN TWO BRANCHES
+                    branch_count_per_node_exeed = 0;
+                    if node_branch_count(1,cb_v1_graph_id)>0 || node_branch_count(1,cb_v2_graph_id)>0
+                        branch_count_per_node_exeed = 1;
+                    end
+                    
+                    % if the branch is not already available and branch is not
+                    % overlapping with any other cardiomyocytes in the ruc, branch
+                    % is added to a cardiomyocyte chainwise list
+                    
+                    if ~branches_overlap && ~branch_exist && ~branch_count_per_node_exeed
+                        node_branch_count(cb_v1_graph_id) = node_branch_count(cb_v1_graph_id)+1;
+                        node_branch_count(cb_v2_graph_id) = node_branch_count(cb_v2_graph_id)+1;
+                        
+                        Branches_for_BP1{end+1} = [cb_v1_graph_id,cb_v2_graph_id];
+                    end
+
+                end
+            end
+
+        end
 
         % ----------------------------------------------------------------%
 
         function branch_clearance = find_branch_clearance(cb_v1, cb_v2, shtlt1_myocytes, shtlt2_myocytes, points_stlt1, points_stlt2)
+            
+            % find_branch_clearance
+            %
+            % Computes minimum distances between a candidate branch and all
+            % cardiomyocytes in two neighbouring sheetlets.
+            %
+            % Used to reject branches that would geometrically overlap
+            % existing microstructure.
 
             branch_clearance = [];
             for cell2 = 1: length(shtlt1_myocytes)
@@ -552,6 +651,14 @@ classdef RUC_microstructure_Toolbox
         %-----------------------------------------------------------------%
 
         function sorted_point_list = sort_pts_from_common_face(coord_list,line_vertex1,line_vertex2)
+            
+            % sort_pts_from_common_face
+            %
+            % Sorts cardiomyocyte base points according to their distance
+            % from a common boundary between two neighbouring sheetlets.
+            %
+            % Used to identify chains most likely to generate
+            % inter-sheetlet branches.
 
             point_dis_from_common_edge = [];
             
@@ -579,8 +686,16 @@ classdef RUC_microstructure_Toolbox
         %-----------------------------------------------------------------%
 
         function coordinate_id = find_coord_id(coordinate_array,p_cord,sheetlet_id)
+        
+            % find_coord_id
+            %
+            % Returns the global node index corresponding to a coordinate
+            % within a specified sheetlet.
+            %
+            % Used when converting local sheetlet connectivity into the
+            % global RUC graph representation.
 
-        coordinate_id = 0;
+            coordinate_id = 0;
         
             if sheetlet_id == 1
                 coordinate_id = coordinate_id;
@@ -604,7 +719,14 @@ classdef RUC_microstructure_Toolbox
         %-----------------------------------------------------------------%
 
         function Poly_area = Poly_area_calc(poly_connectivity,coordinates)
-        
+            
+            % Poly_area_calc
+            %
+            % Computes the total cross-sectional area occupied by all
+            % sheetlet polygons in the representative unit cell.
+            %
+            % Used for volume fraction calculations.
+
             Poly_area = 0;
             for poly = 1:length(poly_connectivity)
                 polygon = poly_connectivity{poly};
@@ -623,8 +745,14 @@ classdef RUC_microstructure_Toolbox
 
         function Final_branches = filter_final_branches(target_ICV, max_vol_frac, Total_volume, Vf_without_branching, Possible_ruc_branches, RUC_v_coord, f_rad)
             
-            % Check whether target ICV can be achieved with availbale
-            % potential branches
+            % filter_final_branches
+            %
+            % Randomly selects branches from the pool of candidate
+            % inter-sheetlet branches until the target intracellular
+            % volume fraction is approximately achieved.
+            %
+            % The selected branches form the final inter-sheetlet
+            % connectivity network.
 
             if max_vol_frac >= target_ICV
                 target_vol_frac = max_vol_frac;

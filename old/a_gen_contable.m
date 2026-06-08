@@ -405,7 +405,7 @@ if Mesoscale == 1
                         shtlt1_myocytes = connectivity_array{shtlt1};
                         shtlt2_myocytes = connectivity_array{shtlt2};
                         
-                        branch_clearance = [];
+                        cell_spcaes = [];
                         for cell2 = 1: length(shtlt1_myocytes)
                             ch_v1_in = shtlt1_myocytes{cell2}(1);
                             ch_v2_in = shtlt1_myocytes{cell2}(2);
@@ -413,9 +413,9 @@ if Mesoscale == 1
                             %node
                             D_cells = min_dis_2lines(cb_v1,cb_v2,points_stlt1{ch_v1_in},points_stlt1{ch_v2_in});
                             if D_cells==0
-                                branch_clearance(end+1) = 1000000;
+                                cell_spcaes(end+1) = 1000000;
                             else
-                                branch_clearance(end+1) = D_cells; 
+                                cell_spcaes(end+1) = D_cells; 
                             end
                             
                             
@@ -427,13 +427,13 @@ if Mesoscale == 1
                             %node
                             D_cells = min_dis_2lines(cb_v1,cb_v2,points_stlt2{ch_v1_in},points_stlt2{ch_v2_in});
                             if D_cells==0
-                                branch_clearance(end+1) = 1000000;
+                                cell_spcaes(end+1) = 1000000;
                             else
-                                branch_clearance(end+1) = D_cells; 
+                                cell_spcaes(end+1) = D_cells; 
                             end
                         end
                         
-                        if min(branch_clearance)<2*f_rad %from sheetlet innitial
+                        if min(cell_spcaes)<2*f_rad %from sheetlet innitial
                            branches_overlap = 1;
                            continue;
                         end
@@ -540,6 +540,8 @@ if Mesoscale == 1
         Final_branches{end+1} = Possible_ruc_branches{random_branch_id(br_id)};
         cur_br_vol = Myo_vol_calc(Final_branches,RUC_v_coord,f_rad);
         if cur_br_vol>=target_br_vol
+
+
             break
         else
             continue

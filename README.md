@@ -42,7 +42,10 @@ Extract Simulation ROI
           |
           v
 Diffusion / Mechanics Simulation Input
-Toolbox Structure
+```
+
+## Toolbox Structure
+
 |File |	Description |
 |---|---|
 |`RUC_microstructure_Toolbox.m`|	`Main toolbox for generating complete representative unit cell myocardial microstructures`|
@@ -53,7 +56,7 @@ Toolbox Structure
 |`Mask_reshape_Toolbox.m`|	`Improves voxelized masks by enforcing cellular continuity and boundaries`|
 |`Plotting_Toolbox.m`|	`Visualization functions for sheetlets and microstructure networks`|
 
-1. Microstructure Generation
+## 1. Microstructure Generation
 
 The first stage generates the geometrically defined myocardial RUC.
 
@@ -92,7 +95,7 @@ Intra-sheetlet branches
 Inter-sheetlet branches
 
 
-2. Coordinate Processing
+## 2. Coordinate Processing
 
 The generated structure is translated to a defined coordinate origin.
 ```matlab
@@ -110,7 +113,7 @@ Translated sheetlet regions
 Geometry ready for voxelization
 
 
-3. Voxel Mask Generation
+## 3. Voxel Mask Generation
 
 Mask_generation_Toolbox converts geometric cardiomyocyte structures into voxel-level representations.
 
@@ -167,7 +170,7 @@ Branches are added:
  mask_id_before_reshape] = ...
 Mask_generation_Toolbox.update_inter_sheetlet_branches(...);
 ```
-4. Mask Reshaping
+## 4. Mask Reshaping
 
 Voxelization can introduce artificial discontinuities.
 Mask_reshape_Toolbox improves cellular geometry after mask generation.
@@ -211,7 +214,7 @@ Checks true connectivity
 Separates unrelated adjacent cells
 Preserves connected branches
 
-5. ROI Extraction for Diffusion Simulation
+## 5. ROI Extraction for Diffusion Simulation
 
 A smaller simulation domain can be extracted from the generated model domain:
 ```matlab
@@ -227,7 +230,7 @@ Volume fraction:
 
 vol_frac = nnz(mask_ROI)/numel(mask_ROI);
 ```
-Visualization
+## Visualization
 
 Generated structures can be visualized using:
 ```matlab
@@ -236,11 +239,11 @@ Plotting_Toolbox.plot_microstructure(...)
 
 or exported to external visualization tools.
 
-Requirements
+## Requirements
 
 Tested with MATLAB.
 
-Recommended:
+## Recommended:
 
 Parallel Computing Toolbox
 Statistics and Machine Learning Toolbox
@@ -255,7 +258,7 @@ parfor
 Output Files
 
 Typical generated files:
-
+```matlab
 *_conData.mat
     Connectivity information
     Branch information
@@ -267,11 +270,11 @@ Typical generated files:
     Sheetlet regions
     Mechanical simulation inputs
 
-
-Units
+```
+## Units
 Most geometric inputs are defined in micrometers. Some cell detail lists convert coordinates, lengths, and radii to meters for volume calculations.
 
-Notes
+## Notes
 Cardiomyocytes are represented using connected cylindrical segments.
 Sheetlet separation represents cleavage-plane organization.
 Branches provide intra- and inter-sheetlet connectivity.

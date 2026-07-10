@@ -1,63 +1,68 @@
-# Sheetlet-Based Myocardial Microstructure Generation Toolbox
+# Myocardium Microstructure RV
 
-This MATLAB toolbox generates synthetic sheetlet-based myocardial microstructures for representative unit cell (RUC) models. The code creates sheetlet arrangements, generates cardiomyocyte-like fiber networks, adds intra- and inter-sheetlet branching, and prepares voxelized masks and geometry data for downstream simulation or analysis.
+A MATLAB toolbox for generating geometry-based myocardial microstructure models with realistic micro- and mesoscale organization. The framework generates sheetlet-based representative unit cell (RUC) models, constructs cardiomyocyte connectivity with branching, voxelizes the generated geometry, and performs mask reshaping to create realistic cellular architectures for downstream diffusion and mechanical simulations.
 
-## Main Features
+## Overview
 
-- Generate sheetlet arrangements using Voronoi/Thiessen tessellation
-- Shrink sheetlet polygons to define cleavage-plane regions
-- Generate cardiomyocyte base points inside sheetlets
-- Extrude cardiomyocyte chains along the fiber direction
-- Add branching between cardiomyocyte chains
-- Build global and sheetlet-wise connectivity tables
-- Convert geometric cell data into voxelized masks
-- Visualize sheetlet boundaries and microstructural networks
-- Save connectivity and geometry data for downstream mechanical simulations and mask generation
+The toolbox provides an end-to-end pipeline for:
 
-## Toolbox Structure
+- Generating myocardial sheetlet organization
+- Creating cardiomyocyte networks inside sheetlets
+- Adding intra- and inter-sheetlet branching
+- Generating volumetric voxel-level intracellular/extracellular masks
+- Improving voxelized geometry using mask reshaping
+- Extracting regions of interest (ROIs) for diffusion simulations
+- Exporting data for visualization and computational modeling
 
-| File | Description |
+## Workflow
+
+```text
+Sheetlet Arrangement
+          |
+          v
+Generate Intra-Sheetlet Cardiomyocytes
+          |
+          v
+Add Inter-Sheetlet Branches
+          |
+          v
+Generate Global Connectivity Network
+          |
+          v
+Voxelize Microstructure
+          |
+          v
+Generate ICV / ECV Mask
+          |
+          v
+Mask Reshaping
+          |
+          v
+Extract Simulation ROI
+          |
+          v
+Diffusion / Mechanics Simulation Input
+Toolbox Structure
+|File |	Description |
 |---|---|
-| `Sheetlet_arrangement_Toolbox.m` | Generates sheetlet seed points, Voronoi polygons, and shrunk sheetlet regions |
-| `Sheetlet_microstructure_Toolbox.m` | Generates intra-sheetlet cardiomyocyte networks and branching |
-| `Coordinate_Toolbox.m` | Provides coordinate conversion, translation, rotation, and distance-calculation utilities |
-| `Mask_generate_Toolbox.m` | Converts cell geometry and sheetlet regions into voxel-level mask information |
-| `Mask_reshape_Toolbox.m` | Provides mask post-processing and slice perturbation tools |
-| `Plotting_Toolbox.m` | Visualizes sheetlet boundaries and microstructural connectivity |
-| Main script | Defines model parameters, generates connectivity, applies transformations, and prepares mask generation |
+|`RUC_microstructure_Toolbox.m`|	`Main toolbox for generating complete representative unit cell myocardial microstructures`|
+|`Sheetlet_arrangement_Toolbox.m`|	`Generates sheetlet organization, Voronoi regions, and cleavage planes`|
+|`Sheetlet_microstructure_Toolbox.m`|	`Generates cardiomyocyte chains, intra-sheetlet networks, and branching`|
+|`Coordinate_Toolbox.m`|	`Coordinate transformations, geometry operations, and distance calculations`|
+|`Mask_generation_Toolbox.m`|	`Converts geometric microstructure into voxelized masks`|
+|`Mask_reshape_Toolbox.m`|	`Improves voxelized masks by enforcing cellular continuity and boundaries`|
+|`Plotting_Toolbox.m`|	`Visualization functions for sheetlets and microstructure networks`|
 
-## Requirements
+1. Microstructure Generation
 
-This code requires MATLAB with support for:
+The first stage generates the geometrically defined myocardial RUC.
 
-- `voronoin`
-- `inpolygon`
-- `graph`
-- `parfor` for parallel collision detection
-
-Recommended toolboxes:
-
-- MATLAB Parallel Computing Toolbox
-- MATLAB Statistics and Machine Learning Toolbox
-
-## Basic Workflow
-
-1. Define the representative unit cell dimensions.
-2. Define sheetlet width, thickness, and shrink ratios.
-3. Generate sheetlet arrangements using Voronoi tessellation.
-4. Generate cardiomyocyte chains within each sheetlet.
-5. Add branches to approach the target intra-cellular volume fraction.
-6. Translate the generated structure to the desired coordinate origin.
-7. Generate cell detail lists and voxel masks.
-8. Save connectivity and geometry data for later use.
-
-## Example Parameters
-
+Define RUC parameters
 ```matlab
-ModelName = 'Microstructure_test1';
+ModelName = 'Branched_myocardium_healthy';
 
-RUC_w = 200;
-RUC_t = 80;
+RUC_w = 500;
+RUC_t = 500;
 RUC_l = 500;
 
 shtlt_w = 200;
@@ -66,64 +71,208 @@ shtlt_t = 45;
 shtlt_shrink_ratios = [0.955, 0.825];
 
 innitial_myocyte_diameter = 10;
-myocyte_length_range = [100, 120];
+myocyte_length_range = [110,130];
 
 shtlt_ICV = 0.95;
 appx_target_ICV = 1.36;
 
 branching_reg_thickness = 40;
-randomization_breakpoint = 500000;
+Generate connectivity
+[RUC_con_table_branched,...
+ RUC_v_coord,...
+ Final_branches,...
+ RUC_con_table_sheetlet_wise] = ...
+ RUC_microstructure_Toolbox.generate_ruc_myoconnectivity(...);
 ```
+The generated connectivity represents:
 
-Running the Code
+Cardiomyocyte centerlines
+Sheetlet-wise organization
+Intra-sheetlet branches
+Inter-sheetlet branches
 
-Run the main script after placing all toolbox files in the MATLAB path.
 
+2. Coordinate Processing
+
+The generated structure is translated to a defined coordinate origin.
+```matlab
+min_point = [0,0,0];
+
+coord_details = Coordinate_Toolbox.Modification_amount_and_dimension(...);
+
+Modified_point_list = ...
+Coordinate_Toolbox.Modify_RUC_coord_mask(...);
+```
+Outputs:
+
+Modified node coordinates
+Translated sheetlet regions
+Geometry ready for voxelization
+
+
+3. Voxel Mask Generation
+
+Mask_generation_Toolbox converts geometric cardiomyocyte structures into voxel-level representations.
+
+The generated mask contains:
+
+Intracellular volume (ICV)
+Extracellular volume (ECV)
+Cell identity labels
+Mask representation
+Binary mask:
+
+ICV voxel = 1
+ECV voxel = 0
+
+
+Cell-ID mask:
+
+Cell voxel = cell ID
+ECV voxel  = 0
+Generate cell geometry
+```matlab
+shtlt_wise_cell_list = ...
+Mask_generation_Toolbox.Sheetletwise_cell_details(...);
+
+inter_shtlt_branch_list = ...
+Mask_generation_Toolbox.gen_cell_detail_list(...);
+```
+Generate Intra-Sheetlet Mask
+
+Each sheetlet is processed independently.
+```matlab
+[cell_mask,...
+ cell_mask_id,...
+ sheetlet_wise_voxel_cell_id,...
+ n_cells] = ...
+Mask_generation_Toolbox.update_inside_sheetlets(...);
+```
+This step:
+
+Converts voxel indices into physical coordinates
+Detects voxel-cylinder intersections
+Assigns voxels to cardiomyocytes
+Generates cell-ID mapping
+Generate Inter-Sheetlet Branch Mask
+
+Candidate voxels in cleavage planes are identified:
+```matlab
+cleavage_voxels = ...
+Mask_generation_Toolbox.filter_unassigned_voxels(...);
+```
+Branches are added:
+```matlab
+[mask_before_reshape,...
+ mask_id_before_reshape] = ...
+Mask_generation_Toolbox.update_inter_sheetlet_branches(...);
+```
+4. Mask Reshaping
+
+Voxelization can introduce artificial discontinuities.
+Mask_reshape_Toolbox improves cellular geometry after mask generation.
+
+Reshaping workflow
+Initial Mask
+     |
+     v
+Slice Perturbation
+     |
+     v
+Recover Missing Cell Voxels
+     |
+     v
+Improve Cell Continuity
+     |
+     v
+Define Cell Boundaries
+     |
+     v
+Final Reshaped Mask
+Slice-Based Reshaping
+```matlab
+reshaped_mask_id = ...
+Mask_reshape_Toolbox.reshape_mask_shake_slices(...);
+```
+This step:
+
+Applies controlled slice perturbations
+Improves slice-to-slice continuity
+Reduces voxelization artifacts
+Define Cell Boundaries
+```matlab
+final_mask_id = ...
+Mask_reshape_Toolbox.reshape_mask_define_cellboundary(...);
+```
+This step:
+
+Detects neighboring cell IDs
+Checks true connectivity
+Separates unrelated adjacent cells
+Preserves connected branches
+
+5. ROI Extraction for Diffusion Simulation
+
+A smaller simulation domain can be extracted from the generated model domain:
+```matlab
+domain_min_point = [60,100,100];
+domain_dim = [500,500,500];
+
+mask_ROI = Diff_domain_mask(cell_mask,...
+                            domain_min_point,...
+                            domain_dim);
+```
+Volume fraction:
 ```matlab
 
-run main_script_name.m
+vol_frac = nnz(mask_ROI)/numel(mask_ROI);
 ```
+Visualization
 
-To generate a new microstructure, set:
-
+Generated structures can be visualized using:
 ```matlab
-Construct_connectivity = 1;
+Plotting_Toolbox.plot_microstructure(...)
 ```
 
-To load a previously saved microstructure, set:
-```matlab
-Construct_connectivity = 0;
-```
+or exported to external visualization tools.
 
-Saved Output Files
+Requirements
 
-The workflow saves intermediate and final data files using the selected ModelName
+Tested with MATLAB.
 
-Example outputs:
+Recommended:
 
-```matlab
-Micro_test1_conData.mat
-Micro_test1_mechInput.mat
-```
+Parallel Computing Toolbox
+Statistics and Machine Learning Toolbox
 
-The connectivity file stores generated microstructural connectivity, sheetlet regions, and branch information.
+Main MATLAB functions used:
 
-The mechanics input file stores translated coordinates and sheetlet information for downstream modeling.
+voronoin
+delaunay
+graph
+inpolygon
+parfor
+Output Files
+
+Typical generated files:
+
+*_conData.mat
+    Connectivity information
+    Branch information
+    Sheetlet geometry
+
+
+*_mechInput.mat
+    Coordinates
+    Sheetlet regions
+    Mechanical simulation inputs
+
 
 Units
-
 Most geometric inputs are defined in micrometers. Some cell detail lists convert coordinates, lengths, and radii to meters for volume calculations.
 
 Notes
-Cardiomyocytes are approximated as cylindrical segments.
-Approximate branching volume fraction may exceed one because overlapping cylindrical nodes are not corrected at this stage.
-The current implementation is intended for synthetic microstructure generation and require further validation before direct biological interpretation.
-
-Citation
-
-
-Authors
-
-License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+Cardiomyocytes are represented using connected cylindrical segments.
+Sheetlet separation represents cleavage-plane organization.
+Branches provide intra- and inter-sheetlet connectivity.
+Final voxel masks preserve realistic intracellular architecture.

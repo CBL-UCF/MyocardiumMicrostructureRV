@@ -82,11 +82,17 @@ classdef Sheetlet_microstructure_Toolbox
             % Add bracnhes selected from possible branches upto approximate
             % target volume fraction
 
+            % If branched - TODO
+
             Total_volume = L_shtlt * vor_area;
 
-            [con_table_branched_final, graph_v1_branched, graph_v2_branched] = Sheetlet_microstructure_Toolbox.select_final_branches(shtlt_ICV, ...
-                Vf_before_branch, fiber_radius, Total_volume, branch_table_coord, possible_branch_table, graph_v1, graph_v2, connected_p_list);
-
+            % [con_table_branched_final, graph_v1_branched, graph_v2_branched] = Sheetlet_microstructure_Toolbox.select_final_branches(shtlt_ICV, ...
+            %     Vf_before_branch, fiber_radius, Total_volume, branch_table_coord, possible_branch_table, graph_v1, graph_v2, connected_p_list);
+            
+            con_table_branched_final = con_table;
+            graph_v1_branched = graph_v1;
+            graph_v2_branched = graph_v2;
+            
             % Monitor generate microstructure in 3D plot
             fig1 = Plotting_Toolbox.plot_microstructure(1, connected_p_list, graph_v1_branched,graph_v2_branched);
 

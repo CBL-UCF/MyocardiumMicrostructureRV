@@ -109,13 +109,13 @@ classdef RUC_microstructure_Toolbox
             RUC_con_table_branched = RUC_con_table;  %connectivity table (type-cell)
             
             
-            for branch_no1 = 1:length(Final_branches)
-                RUC_con_v1_branched(end+1) = Final_branches{branch_no1}(1);
-                RUC_con_v2_branched(end+1) = Final_branches{branch_no1}(2);
-            end
-            for branch_no2 = 1:length(Final_branches)
-                RUC_con_table_branched{end+1} = Final_branches{branch_no2};
-            end
+            % for branch_no1 = 1:length(Final_branches)
+            %     RUC_con_v1_branched(end+1) = Final_branches{branch_no1}(1);
+            %     RUC_con_v2_branched(end+1) = Final_branches{branch_no1}(2);
+            % end
+            % for branch_no2 = 1:length(Final_branches)
+            %     RUC_con_table_branched{end+1} = Final_branches{branch_no2};
+            % end
         
         end
 
@@ -780,6 +780,21 @@ classdef RUC_microstructure_Toolbox
                 end
             end
 
+
+        end
+
+        %-----------------------------------------------------------------%
+
+        function shtletwise_cell_id_caps = shtltwise_cell_ids(RUC_con_table_sheetlet_wise)
+
+            shtletwise_cell_id_caps = [];
+            cap = 0;
+
+            for stlt = 1:length(RUC_con_table_sheetlet_wise)
+
+                cap = cap + length(RUC_con_table_sheetlet_wise{stlt});
+                shtletwise_cell_id_caps(end+1) = cap;
+            end
 
         end
 

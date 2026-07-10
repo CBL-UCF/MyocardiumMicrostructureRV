@@ -109,15 +109,23 @@ classdef Plotting_Toolbox
             figure(fig_no)
 
             hold on;
-            XX=[];
-            YY=[];
-            ZZ=[];
             
-            for pt_g=1:length(connected_p_list)
-                XX(end+1)=connected_p_list{pt_g}(1);
-                YY(end+1)=connected_p_list{pt_g}(2);
-                ZZ(end+1)=connected_p_list{pt_g}(3);
+            
+            if iscell(connected_p_list)
+                XX=[];
+                YY=[];
+                ZZ=[];
+                for pt_g=1:length(connected_p_list)
+                    XX(end+1)=connected_p_list{pt_g}(1);
+                    YY(end+1)=connected_p_list{pt_g}(2);
+                    ZZ(end+1)=connected_p_list{pt_g}(3);
+                end
+            else
+                XX = connected_p_list(:,1);
+                YY = connected_p_list(:,2);
+                ZZ = connected_p_list(:,3);
             end
+
             
             con_graph=graph(graph_v1_branched,graph_v2_branched);
             pp=plot(con_graph);

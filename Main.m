@@ -9,7 +9,7 @@ clc; clear; close all;
 % geometry information, and initializes mask generation.
 
 
-ModelName = 'Micro_test_wobr';
+ModelName = 'Meso_celldimensions';
 
 % Flag to control whether connectivity is generated or loaded from file
 Construct_connectivity = 1 ;
@@ -61,7 +61,7 @@ if Construct_connectivity
 
     
     % Save microstructure connectivity information
-    save(append(ModelName,'_conData'));
+    save(append(ModelName,'_conData.mat'));
 
 else
 
@@ -106,7 +106,7 @@ Modified_mid_sheetlets = Coordinate_Toolbox.Modify_shtlt_coord(Shrinked_after_in
 fig3 = Plotting_Toolbox.plot_microstructure(3, Modified_point_list, RUC_con_v1_branched, RUC_con_v2_branched);
 
 % Save translated microstructure and sheetlet information for mechanics input
-save(append(ModelName,'_mechInput_250mm_wobr.mat'),"RUC_w","RUC_l","RUC_t","Modified_coordinates","Modified_sheetlet_regions","RUC_con_table_sheetlet_wise")
+save(append(ModelName,'_mechInput.mat'),"RUC_w","RUC_l","RUC_t","Modified_coordinates","Modified_sheetlet_regions","RUC_con_table_sheetlet_wise")
 
 % Cutout a ROI - TODO
 ROI_min_point = [30, 50, 80];
@@ -115,7 +115,7 @@ RUC_con = [RUC_con_v1_branched; RUC_con_v2_branched]';
 [ROI_Pts, ROI_Conn, ROI_parentElem, ROI_tRange] = ROI_cutout_toolbox.clipLineElementsToRUC(Modified_coordinates, RUC_con, ROI_min_point, ROI_dimension, 1e-6);
 [front, back, left, right, down, up] = ROI_cutout_toolbox.find_boundary_points(ROI_min_point, ROI_min_point + ROI_dimension, ROI_Pts, 0.05);
 
-save(append(ModelName,'_mechInput_ROI_250mm_wobr.mat'),"ROI_min_point","ROI_dimension","ROI_Pts","ROI_Conn", "ROI_parentElem", "RUC_con_table_sheetlet_wise", 'RUC_shtletwise_cell_id_caps', "front", "back", "left", "right", "down", "up")
+save(append(ModelName,'_mechInput_ROI.mat'),"ROI_min_point","ROI_dimension","ROI_Pts","ROI_Conn", "ROI_parentElem", "RUC_con_table_sheetlet_wise", 'RUC_shtletwise_cell_id_caps', "front", "back", "left", "right", "down", "up")
 %% Generate Voxelwise mesh for vertual MR simulation
 
 % Generate geometric cell lists for the complete network, sheetlet-wise
@@ -124,15 +124,20 @@ all_cell_list = Mask_generation_Toolbox.gen_cell_detail_list(RUC_con_table_branc
 shtlt_wise_cell_list = Mask_generation_Toolbox.Sheetletwise_cell_details(RUC_con_table_sheetlet_wise,Modified_point_list,12);
 inter_shtlt_branch_list = Mask_generation_Toolbox.gen_cell_detail_list(Final_branches,Modified_point_list,12);
 
-% Generate mask
+% Generate a binary mask (ICV - 1; ECV - 0) and a mask with voxels assigned
+% to belonging cell id (ICV - id of the myocyte which a voxel belongs to; ECV - 0)
 
 [mask_ROI, mask_ROI_id, Reshaped_mask, Reshaped_mask_id, vol_frac] = Mask_generation_Toolbox.Generate_mask(RUC_dim, all_cell_list, shtlt_wise_cell_list, inter_shtlt_branch_list, Modified_sheetlet_regions, Modified_mid_sheetlets, ROI_min_point, ROI_dimension, RUC_con_table_sheetlet_wise, Final_branches);
 
 print(vol_frac)
 
 % Save .mat for diffusion simulation
-filename = 'RUC_micro_vf55_diff.mat';
-Cells_mask = ROI_mask;
-Cell_params = ROI_mask;
+filename = ppend(ModelName,'_diff.mat');
+Cells_mask = mask_ROI;
+Cell_params = mask_ROI;
 
 save(filename,"Cells_mask", "Cell_params");
+
+% Save .mat of the mask for further use
+filename = ppend(ModelName,'_mask_data.mat');
+save(filename, "mask_ROI", "mask_ROI_id", "Reshaped_mask", "Reshaped_mask_id", "vol_frac", "all_cell_list", "shtlt_wise_cell_list", "inter_shtlt_branch_list")

@@ -109,13 +109,13 @@ classdef RUC_microstructure_Toolbox
             RUC_con_table_branched = RUC_con_table;  %connectivity table (type-cell)
             
             
-            % for branch_no1 = 1:length(Final_branches)
-            %     RUC_con_v1_branched(end+1) = Final_branches{branch_no1}(1);
-            %     RUC_con_v2_branched(end+1) = Final_branches{branch_no1}(2);
-            % end
-            % for branch_no2 = 1:length(Final_branches)
-            %     RUC_con_table_branched{end+1} = Final_branches{branch_no2};
-            % end
+            for branch_no1 = 1:length(Final_branches)
+                RUC_con_v1_branched(end+1) = Final_branches{branch_no1}(1);
+                RUC_con_v2_branched(end+1) = Final_branches{branch_no1}(2);
+            end
+            for branch_no2 = 1:length(Final_branches)
+                RUC_con_table_branched{end+1} = Final_branches{branch_no2};
+            end
         
         end
 

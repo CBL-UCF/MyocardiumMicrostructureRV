@@ -80,8 +80,8 @@ classdef Mask_generation_Toolbox
             % ____________________________________________________________%
             % Innitiate mask and identify voxel lists
 
-            Sheetletwise_voxel_list = Mask_generation_Toolbox.Gen_sheetlet_voxel_list(Modified_sheetlet_regions,NbPixel);
-            Sheetletwise_mid_voxel_list = Mask_generation_Toolbox.Gen_sheetlet_voxel_list(Modified_mid_sheetlets,NbPixel);
+            Sheetletwise_voxel_list = Mask_generation_Toolbox.Gen_sheetlet_voxel_list(Modified_sheetlet_regions, NbPixel);
+            Sheetletwise_mid_voxel_list = Mask_generation_Toolbox.Gen_sheetlet_voxel_list(Modified_mid_sheetlets, NbPixel);
 
             % ____________________________________________________________%
             % Update mask with cells inside sheetlets (Excluding cleavage planes)
@@ -178,6 +178,44 @@ classdef Mask_generation_Toolbox
             Mat2VTK(f_vtk,Reshaped_mask,'binary');
 
 
+        end
+
+        % ----------------------------------------------------------------%
+        % Function to generate list of each voxel inside a sheetlet
+        
+        function Sheetletwise_voxel_list = Gen_sheetlet_voxel_list(sheetlets,NbPixel)
+
+            % Gen_sheetlet_voxel_list
+            % Generates voxel coordinates belonging to each sheetlet region.
+            %
+            % Inputs:
+            %   sheetlets - Cell array of polygon definitions
+            %   NbPixel   - Mask dimensions [Nx, Ny, Nz]
+            %
+            % Output:
+            %   Sheetletwise_voxel_list - Cell array of voxel coordinate lists
+            
+            %identify_voxels_in_each_sheetlet
+            sheetlet_voxels = Mask_generation_Toolbox.Sheetlet_boundary_mask(NbPixel,sheetlets);
+            
+            %Create sheetletwise voxel list
+            Sheetletwise_voxel_list = cell(length(sheetlet_voxels),1);
+
+            for i = 1:length(sheetlet_voxels)
+                D2_list = sheetlet_voxels{1,i};
+                num_voxels = size(D2_list,1)*NbPixel(1);
+                voxel_list = zeros(num_voxels,3);
+
+                vox_num = 1;
+                for vox_X = 1:NbPixel(1)
+                    for pix = 1:size(D2_list,1)
+                        voxel_list(vox_num,:) = [vox_X,D2_list(pix,1),D2_list(pix,2)];
+                        vox_num = vox_num+1;
+                    end
+                end
+                Sheetletwise_voxel_list{i,1} = voxel_list;
+            end
+            
         end
         
         % ----------------------------------------------------------------%
@@ -434,43 +472,7 @@ classdef Mask_generation_Toolbox
         end
         
 
-        % ----------------------------------------------------------------%
-        % Function to generate list of each voxel inside a sheetlet
         
-        function Sheetletwise_voxel_list = Gen_sheetlet_voxel_list(sheetlets,NbPixel)
-
-            % Gen_sheetlet_voxel_list
-            % Generates voxel coordinates belonging to each sheetlet region.
-            %
-            % Inputs:
-            %   sheetlets - Cell array of polygon definitions
-            %   NbPixel   - Mask dimensions [Nx, Ny, Nz]
-            %
-            % Output:
-            %   Sheetletwise_voxel_list - Cell array of voxel coordinate lists
-            
-            %identify_voxels_in_each_sheetlet
-            sheetlet_voxels = Mask_generation_Toolbox.Sheetlet_boundary_mask(NbPixel,sheetlets);
-            
-            %Create sheetletwise woxel list
-            Sheetletwise_voxel_list = cell(length(sheetlet_voxels),1);
-
-            for i = 1:length(sheetlet_voxels)
-                D2_list = sheetlet_voxels{1,i};
-                num_voxels = size(D2_list,1)*NbPixel(1);
-                voxel_list = zeros(num_voxels,3);
-
-                vox_num = 1;
-                for vox_X = 1:NbPixel(1)
-                    for pix = 1:size(D2_list,1)
-                        voxel_list(vox_num,:) = [vox_X,D2_list(pix,1),D2_list(pix,2)];
-                        vox_num = vox_num+1;
-                    end
-                end
-                Sheetletwise_voxel_list{i,1} = voxel_list;
-            end
-            
-        end
 
 
         % ----------------------------------------------------------------%
@@ -601,7 +603,7 @@ classdef Mask_generation_Toolbox
             if dot(vec1,vec2) < 0
                 dis_pt = norm(cross(line_seg,line_to_p)) / norm(line_seg);
             else
-                dis_pt = realmax;
+                dis_pt = realmax; % if not in the line segment, return maximum value for distance
             end
         end
 
